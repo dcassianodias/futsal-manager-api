@@ -1,0 +1,50 @@
+# Futsal Manager – Architecture Document
+
+## 1. Architectural Overview
+
+O sistema será composto por três camadas principais:
+
+Frontend (Angular PWA)  
+↓  
+Backend (Spring Boot API)  
+↓  
+Database (PostgreSQL)
+
+A comunicação entre frontend e backend será feita via API REST utilizando JSON.
+
+---
+
+## 2. Stack Tecnológica Oficial
+
+### Backend
+- Java 21
+- Spring Boot 3
+- Spring Web
+- Spring Data JPA
+- Spring Security (JWT)
+- Flyway
+- PostgreSQL
+- Docker
+
+### Frontend
+- Angular 17+
+- Angular Material
+- PWA (Progressive Web App)
+
+---
+
+## 3. Arquitetura do Backend
+
+O projeto seguirá uma arquitetura MVC organizada e desacoplada.
+
+### Estrutura de pacotes:
+
+com.futsalmanager
+- ├── controller
+- ├── service
+- ├── repository
+- ├── entity
+- ├── dto
+- ├── security
+- ├── config
+- └── exception
