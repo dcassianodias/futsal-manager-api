@@ -61,3 +61,44 @@ src/main/java/com/futsalmanager
 - └── exception
 
 
+Documentação detalhada disponível na pasta `/docs`.
+
+---
+
+## 🛣 Roadmap
+
+### Fase 1 – MVP
+- Autenticação
+- Cadastro de time
+- Cadastro de atletas
+- Gestão de jogos
+- Controle de pagamentos
+
+### Fase 2
+- Estatísticas básicas
+- Upload de imagens
+- Relatórios
+
+### Fase 3
+- Multi-tenant completo
+- Deploy em nuvem
+- Monetização
+
+---
+
+## 📌 Status
+
+🚧 Em desenvolvimento
+
+---
+
+## 📄 Documentação
+
+A documentação detalhada pode ser encontrada na pasta `/docs`.
+
+---
+
+Desenvolvido por Danilo Cassiano Dias
+
+
+
