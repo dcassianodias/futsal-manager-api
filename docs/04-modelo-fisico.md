@@ -105,8 +105,7 @@ Descrição: Registra pagamentos realizados pelos atletas.
 | id               | UUID          | Sim         | Chave primária        |
 | atleta_id        | UUID          | Sim         | FK para atleta        |
 | jogo_id          | UUID          | Não         | FK opcional para jogo |
-| mes_referencia   | DATE          | SIM         | Mês de Competência
-                                                    (ex: 2026-02-01)     |
+| mes_referencia   | DATE          | SIM         | Mês de Competência(ex: 2026-02-01)     |
 | valor            | NUMERIC(10,2) | Sim         | Valor pago            |
 | data_pagamento   | TIMESTAMP     | Sim         | Data do pagamento     |
 | tipo_pagamento   | ENUM          | Sim         | MENSALIDADE ou JOGO   |
@@ -118,6 +117,10 @@ Relacionamentos:
 - FK: pagamento.atleta_id → atleta.id (ON DELETE CASCADE)
 
 - FK: pagamento.jogo_id → jogo.id (ON DELETE SET NULL)
+
+Restrições adicionais:
+
+- UNIQUE (atleta_id, mes_referencia, tipo_pagamento)
 
 Índices recomendados:
 
