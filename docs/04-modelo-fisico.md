@@ -103,13 +103,13 @@ Descrição: Registra pagamentos realizados pelos atletas.
 | Coluna           | Tipo          | Obrigatório | Observação            |
 | ---------------- | ------------- | ----------- | --------------------- |
 | id               | UUID          | Sim         | Chave primária        |
-| atleta_id        | UUID UNIQUE   | Sim         | FK para atleta        |
+| atleta_id        | UUID          | Sim         | FK para atleta        |
 | jogo_id          | UUID          | Não         | FK opcional para jogo |
 | mes_referencia   | DATE          | SIM         | Mês de Competência
                                                     (ex: 2026-02-01)     |
 | valor            | NUMERIC(10,2) | Sim         | Valor pago            |
 | data_pagamento   | TIMESTAMP     | Sim         | Data do pagamento     |
-| tipo_pagamento   | ENUM UNIQUE   | Sim         | MENSALIDADE ou JOGO   |
+| tipo_pagamento   | ENUM          | Sim         | MENSALIDADE ou JOGO   |
 | data_criacao     | TIMESTAMP     | Sim         | Auditoria             |
 | data_atualizacao | TIMESTAMP     | Não         | Auditoria             |
 
