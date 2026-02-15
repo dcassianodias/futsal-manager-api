@@ -87,9 +87,10 @@ Campos:
 - id_usuario
 - mes_referencia (YYYY-MM)
 - valor
-- tipo (MENSALIDADE | EXTRA)
+- tipo (MENSALIDADE | EVENTO)
 - status (PAGO | PENDENTE)
 - data_criacao
+- eventoId
 
 Regras:
 - Um Pagamento pertence a um Usuário
@@ -111,6 +112,19 @@ Campos:
 - mes_referencia
 - tipo (ALUGUEL_QUADRA | UNIFORME | EVENTO | OUTROS)
 - data_criacao
+
+Evento:
+
+- id: UUID
+- time_id: UUID
+- nome: String
+- descricao: String
+- valorPadrao: BigDecimal
+- dataInicio: LocalDate
+- dataFim: LocalDate
+- ativo: Boolean
+- createdAt: LocalDateTime
+
 
 Regras:
 - Apenas ADMIN pode registrar despesas
