@@ -22,7 +22,6 @@ Campos:
 
 - id
 - nome
-- valor_mensalidade
 - data_criacao
 - ativo
 
