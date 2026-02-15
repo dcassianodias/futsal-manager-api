@@ -1,7 +1,7 @@
 # 📘 MD04 – Modelo Físico do Banco de Dados
 ## 🎯 Objetivo
 
-Definir a estrutura física do banco de dados PostgreSQL, incluindo:
+Definir a estrutura física do banco de dados PostgreSQL alinhada ao Modelo de Domínio (MD03).
 
 - Tabelas
 
@@ -25,71 +25,87 @@ Padrões adotados:
 
 - UUID como chave primária
 
-- Controle de auditoria
+- Auditoria com data_criacao e data_atualizacao
+
+- Multi-tenant via time_id
 
 - Integridade referencial via FOREIGN KEY  
 
-
-# Tabela Time
+# 📌 Tabela: time
 Descrição: Armazena os dados do time.
 
-| Coluna           | Tipo         | Obrigatório | Observação           |
-| ---------------- | ------------ | ----------- | -------------------- |
-| id               | UUID         | Sim         | Chave primária       |
-| nome             | VARCHAR(100) | Sim         | Nome do time         |
-| data_criacao     | TIMESTAMP    | Sim         | Data de criação      |
-| data_atualizacao | TIMESTAMP    | Não         | Data de atualização  |
-| ativo            | BOOLEAN      | Sim         | Indica se está ativo |
-
-# Tabela Atleta
-Descrição: Armazena os atletas vinculados a um time.
-
-| Coluna           | Tipo         | Obrigatório | Observação        |
-| ---------------- | ------------ | ----------- | ----------------- |
-| id               | UUID         | Sim         | Chave primária    |
-| nome             | VARCHAR(150) | Sim         | Nome completo     |
-| telefone         | VARCHAR(20)  | Não         | Contato           |
-| posicao          | VARCHAR(50)  | Não         | Posição em quadra |
-| data_entrada     | DATE         | Sim         | Data de entrada   |
-| ativo            | BOOLEAN      | Sim         | Status            |
-| time_id          | UUID         | Sim         | FK para time      |
-| data_criacao     | TIMESTAMP    | Sim         | Auditoria         |
-| data_atualizacao | TIMESTAMP    | Não         | Auditoria         |
-
-Relacionamento:
-
-- FK: atleta.time_id → time.id
-
-- Regra de exclusão: ON DELETE CASCADE
+| Coluna            | Tipo          | Obrigatório | Observação           |
+| ----------------- | ------------- | ----------- | -------------------- |
+| id                | UUID          | Sim         | Chave primária       |
+| nome              | VARCHAR(100)  | Sim         | Nome do time         |
+| valor_mensalidade | NUMERIC(10,2) | Sim         | Valor mensal fixo    |
+| ativo             | BOOLEAN       | Sim         | Indica se está ativo |
+| data_criacao      | TIMESTAMP     | Sim         | Auditoria            |
+| data_atualizacao  | TIMESTAMP     | Não         | Auditoria            |
 
 Índice recomendado:
 
-- idx_atleta_time_id (time_id)
+- idx_time_nome (nome)
+
+# 📌 Tabela: usuario
+Descrição: Representa atleta ou administrador.
+
+| Coluna           | Tipo           | Obrigatório | Observação          |
+| ---------------- | -------------- | ----------- | ------------------- |
+| id               | UUID           | Sim         | Chave primária      |
+| time_id          | UUID           | Sim         | FK para time        |
+| nome             | VARCHAR(150)   | Sim         | Nome completo       |
+| email            | VARCHAR(150)   | Sim         | Deve ser único      |
+| senha            | VARCHAR(255)   | Sim         | Senha criptografada |
+| perfil           | perfil_usuario | Sim         | ADMIN ou ATLETA     |
+| ativo            | BOOLEAN        | Sim         | Status              |
+| data_criacao     | TIMESTAMP      | Sim         | Auditoria           |
+| data_atualizacao | TIMESTAMP      | Não         | Auditoria           |
+
+Relacionamentos:
+
+- FK: usuario.time_id → time.id (ON DELETE CASCADE)
+
+Restrições:
+
+- UNIQUE (time_id, email)
+
+Índice recomendado:
+
+- idx_usuario_time_id (time_id)
 
 # Tabela Jogo
 Descrição: Registra os jogos organizados pelo time.
 
-| Coluna           | Tipo          | Obrigatório | Observação       |
-| ---------------- | ------------- | ----------- | ---------------- |
-| id               | UUID          | Sim         | Chave primária   |
-| data_jogo        | TIMESTAMP     | Sim         | Data e horário   |
-| local            | VARCHAR(150)  | Sim         | Local da partida |
-| confirmado       | BOOLEAN       | Sim         | Status           |
-| time_id          | UUID          | Sim         | FK para time     |
-| data_criacao     | TIMESTAMP     | Sim         | Auditoria        |
-| data_atualizacao | TIMESTAMP     | Não         | Auditoria        |
+| Coluna           | Tipo         | Obrigatório | Observação              |
+| ---------------- | ------------ | ----------- | ----------------------- |
+| id               | UUID         | Sim         | Chave primária          |
+| time_id          | UUID         | Sim         | FK para time            |
+| adversario       | VARCHAR(150) | Sim         | Nome do adversário      |
+| local            | VARCHAR(150) | Sim         | Local da partida        |
+| data_hora        | TIMESTAMP    | Sim         | Data e hora             |
+| status           | status_jogo  | Sim         | AGENDADO, FINALIZADO... |
+| observacoes      | TEXT         | Não         | Campo opcional          |
+| data_criacao     | TIMESTAMP    | Sim         | Auditoria               |
+| data_atualizacao | TIMESTAMP    | Não         | Auditoria               |
 
 Relacionamento:
 
-- FK: jogo.time_id → time.id
-
-- Regra de exclusão: ON DELETE CASCADE
+- FK: jogo.time_id → time.id (ON DELETE CASCADE)
 
 Índice recomendado:
 
 - idx_jogo_time_id (time_id)
 
-# Tipo Enumerado: tipo_pagamento
+# 🔷 Tipo Enumerado: perfil_usuario
+
+Valores:
+
+- ADMIN
+
+- ATLETA
+
+# 🔷 Tipo Enumerado: tipo_pagamento
 
 Valores possíveis:
 
@@ -97,49 +113,76 @@ Valores possíveis:
 
 - JOGO
 
+# 🔷 Tipo Enumerado: status_pagamento
+
+Valores:
+
+- PAGO
+
+- PENDENTE
+
+# 🔷 Tipo Enumerado: status_jogo
+
+Valores:
+
+- AGENDADO
+
+- FINALIZADO
+
+- CANCELADO
+
 # Tabela: pagamento
 Descrição: Registra pagamentos realizados pelos atletas.
 
-| Coluna           | Tipo          | Obrigatório | Observação            |
-| ---------------- | ------------- | ----------- | --------------------- |
-| id               | UUID          | Sim         | Chave primária        |
-| atleta_id        | UUID          | Sim         | FK para atleta        |
-| jogo_id          | UUID          | Não         | FK opcional para jogo |
-| mes_referencia   | DATE          | SIM         | Mês de Competência(ex: 2026-02-01)     |
-| valor            | NUMERIC(10,2) | Sim         | Valor pago            |
-| data_pagamento   | TIMESTAMP     | Sim         | Data do pagamento     |
-| tipo_pagamento   | ENUM          | Sim         | MENSALIDADE ou JOGO   |
-| data_criacao     | TIMESTAMP     | Sim         | Auditoria             |
-| data_atualizacao | TIMESTAMP     | Não         | Auditoria             |
+| Coluna           | Tipo             | Obrigatório | Observação                   |
+| ---------------- | ---------------- | ----------- | ---------------------------- |
+| id               | UUID             | Sim         | Chave primária               |
+| time_id          | UUID             | Sim         | FK para time                 |
+| usuario_id       | UUID             | Sim         | FK para usuario              |
+| jogo_id          | UUID             | Não         | FK opcional para jogo        |
+| mes_referencia   | DATE             | Sim         | Competência (ex: 2026-02-01) |
+| valor            | NUMERIC(10,2)    | Sim         | Valor da cobrança            |
+| tipo             | tipo_pagamento   | Sim         | MENSALIDADE ou EXTRA         |
+| status           | status_pagamento | Sim         | PAGO ou PENDENTE             |
+| data_criacao     | TIMESTAMP        | Sim         | Auditoria                    |
+| data_atualizacao | TIMESTAMP        | Não         | Auditoria                    |
 
 Relacionamentos:
 
-- FK: pagamento.atleta_id → atleta.id (ON DELETE CASCADE)
+- FK: pagamento.time_id → time.id (ON DELETE CASCADE)
+
+- FK: pagamento.usuario_id → usuario.id (ON DELETE CASCADE)
 
 - FK: pagamento.jogo_id → jogo.id (ON DELETE SET NULL)
 
 Restrições adicionais:
 
-- UNIQUE (atleta_id, mes_referencia, tipo_pagamento)
-
+- UNIQUE (time_id, usuario_id, mes_referencia, tipo)
+  
 Índices recomendados:
 
-- idx_pagamento_atleta_id (atleta_id)
+- idx_pagamento_time_id (time_id)
+
+- idx_pagamento_usuario_id (usuario_id)
 
 - idx_pagamento_jogo_id (jogo_id)
+
+- idx_pagamento_mes_referencia (mes_referencia)
+
 
 # Tabela: despesa
 Descrição: Armazena despesas do time.
 
-| Coluna           | Tipo          | Obrigatório | Observação           |
-| ---------------- | ------------- | ----------- | -------------------- |
-| id               | UUID          | Sim         | Chave primária       |
-| descricao        | VARCHAR(255)  | Sim         | Descrição da despesa |
-| valor            | NUMERIC(10,2) | Sim         | Valor                |
-| data_despesa     | TIMESTAMP     | Sim         | Data da despesa      |
-| time_id          | UUID          | Sim         | FK para time         |
-| data_criacao     | TIMESTAMP     | Sim         | Auditoria            |
-| data_atualizacao | TIMESTAMP     | Não         | Auditoria            |
+| Coluna           | Tipo          | Obrigatório | Observação     |
+| ---------------- | ------------- | ----------- | -------------- |
+| id               | UUID          | Sim         | Chave primária |
+| time_id          | UUID          | Sim         | FK para time   |
+| descricao        | VARCHAR(255)  | Sim         | Descrição      |
+| valor            | NUMERIC(10,2) | Sim         | Valor          |
+| mes_referencia   | DATE          | Sim         | Competência    |
+| data_criacao     | TIMESTAMP     | Sim         | Auditoria      |
+| data_atualizacao | TIMESTAMP     | Não         | Auditoria      |
+
 
 Relacionamento:
 
@@ -157,7 +200,7 @@ Relacionamento:
 
 - Um Time possui várias Despesas
 
-- Um Atleta possui vários Pagamentos
+- Um Usuário possui vários Pagamentos
 
 - Um Jogo pode possuir vários Pagamentos
 
@@ -168,58 +211,66 @@ erDiagram
     TIME {
         UUID id PK
         VARCHAR nome
+        NUMERIC valor_mensalidade
+        BOOLEAN ativo
         TIMESTAMP data_criacao
         TIMESTAMP data_atualizacao
-        BOOLEAN ativo
     }
 
-    ATLETA {
+    USUARIO {
         UUID id PK
-        VARCHAR nome
-        VARCHAR telefone
-        VARCHAR posicao
-        DATE data_entrada
-        BOOLEAN ativo
         UUID time_id FK
+        VARCHAR nome
+        VARCHAR email
+        VARCHAR senha
+        ENUM perfil_usuario
+        BOOLEAN ativo
         TIMESTAMP data_criacao
         TIMESTAMP data_atualizacao
     }
 
     JOGO {
         UUID id PK
-        TIMESTAMP data_jogo
-        VARCHAR local
-        BOOLEAN confirmado
         UUID time_id FK
+        VARCHAR adversario
+        VARCHAR local
+        TIMESTAMP data_hora
+        ENUM status_jogo
+        TEXT observacoes
         TIMESTAMP data_criacao
         TIMESTAMP data_atualizacao
     }
 
     PAGAMENTO {
         UUID id PK
-        UUID atleta_id FK
+        UUID time_id FK
+        UUID usuario_id FK
         UUID jogo_id FK
         DATE mes_referencia
         NUMERIC valor
-        TIMESTAMP data_pagamento
         ENUM tipo_pagamento
+        ENUM status_pagamento
         TIMESTAMP data_criacao
         TIMESTAMP data_atualizacao
     }
 
     DESPESA {
         UUID id PK
+        UUID time_id FK
         VARCHAR descricao
         NUMERIC valor
-        TIMESTAMP data_despesa
-        UUID time_id FK
+        DATE mes_referencia
         TIMESTAMP data_criacao
         TIMESTAMP data_atualizacao
     }
 
-    TIME ||--o{ ATLETA : possui
+    TIME ||--o{ USUARIO : possui
     TIME ||--o{ JOGO : organiza
-    TIME ||--o{ DESPESA : registra
-    ATLETA ||--o{ PAGAMENTO : realiza
-    JOGO ||--o{ PAGAMENTO : opcional
+    TIME ||--o{ PAGAMENTO : registra
+    TIME ||--o{ DESPESA : possui
+
+    USUARIO ||--o{ PAGAMENTO : realiza
+    JOGO ||--o{ PAGAMENTO : referencia
+
+
 
