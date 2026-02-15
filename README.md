@@ -1,9 +1,6 @@
-# futsal-manager-api
-Aplicativo para gestão de times de futsal
-
 # ⚽ Futsal Manager API
 
-Sistema de gestão para times amadores de futsal.
+Aplicação backend para gestão de times amadores de futsal.
 
 O objetivo do projeto é centralizar a organização de jogos, controle financeiro e comunicação entre atletas e administradores, eliminando o uso de planilhas e controles informais.
 
