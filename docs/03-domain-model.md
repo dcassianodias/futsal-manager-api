@@ -119,7 +119,7 @@ Regras:
 
 ---
 
-### 2.6 evento
+### 2.6 Evento
 
 Evento:
 
@@ -127,9 +127,9 @@ Evento:
 - time_id: UUID
 - nome: String
 - descricao: String
-- valorPadrao: BigDecimal
-- dataInicio: LocalDate
-- dataFim: LocalDate
+- valor_sugerido: BigDecimal
+- data_inicio: LocalDate
+- data_fim: LocalDate
 - ativo: Boolean
 - createdAt: LocalDateTime
   
