@@ -57,7 +57,7 @@ Descrição: Representa atleta ou administrador.
 | nome             | VARCHAR(150)   | Sim         | Nome completo       |
 | email            | VARCHAR(150)   | Sim         | Deve ser único      |
 | senha            | VARCHAR(255)   | Sim         | Senha criptografada |
-| perfil           | perfil_usuario | Sim         | ADMIN ou USUARIO    |
+| perfil           | perfil_usuario | Sim         | ADMIN ou ATLETA    |
 | ativo            | BOOLEAN        | Sim         | Status              |
 | data_criacao     | TIMESTAMP      | Sim         | Auditoria           |
 | data_atualizacao | TIMESTAMP      | Não         | Auditoria           |
@@ -205,6 +205,21 @@ Relacionamento:
 
 - idx_despesa_time_id (time_id)
 
+# Tabela: evento
+Descrição: Armazena despesas do time.
+
+| Coluna           | Tipo          | Obrigatório | Observação     |
+| ---------------- | ------------- | ----------- | -------------- |
+| time_id          | UUID          | Sim         | FK para time   |
+| nome             | VARCHAR(255)  | Sim         | FK para time   |
+| descricao        | VARCHAR(255)  | Sim         | Descrição      |
+| valor_sugerido   | NUMERIC(10,2) | Não         | Valor          |
+| data_inicio      | TIMESTAMP     | Sim         | Auditoria      |
+| data_fim         | TIMESTAMP     | Sim         | Auditoria      |
+| ativo            | TIMESTAMP     | Não         | Auditoria      |
+| data_criacao     | TIMESTAMP     | Sim         | Auditoria      |
+| data_atualizacao | TIMESTAMP     | Sim         | Auditoria      |
+
 # Diagrama de Relacionamentos
 
 - Um Time possui vários Usuarios
@@ -215,7 +230,7 @@ Relacionamento:
 
 - Um Usuário possui vários Pagamentos
 
-- Um Jogo pode possuir vários Pagamentos
+- Um Evento pode possuir vários Pagamentos
 
 # 📊 Diagrama Entidade-Relacionamento (ER)
 
