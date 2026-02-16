@@ -125,7 +125,7 @@ Exemplo:
 
 # 🗂 Estrutura de Pacotes (Planejada)
 ```text
-br.com.futsalmanager
+com.futsalmanager
 
 ├── apresentacao
 │   ├── controller
