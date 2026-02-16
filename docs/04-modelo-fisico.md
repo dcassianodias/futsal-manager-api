@@ -111,7 +111,7 @@ Valores possíveis:
 
 - MENSALIDADE
 
-- JOGO
+- EVENTO
 
 # 🔷 Tipo Enumerado: status_pagamento
 
@@ -139,10 +139,10 @@ Descrição: Registra pagamentos realizados pelos atletas.
 | id               | UUID             | Sim         | Chave primária               |
 | time_id          | UUID             | Sim         | FK para time                 |
 | usuario_id       | UUID             | Sim         | FK para usuario              |
-| jogo_id          | UUID             | Não         | FK opcional para jogo        |
+| evento_id        | UUID             | Não         | FK opcional para jogo        |
 | mes_referencia   | DATE             | Sim         | Competência (ex: 2026-02-01) |
 | valor            | NUMERIC(10,2)    | Sim         | Valor da cobrança            |
-| tipo             | tipo_pagamento   | Sim         | MENSALIDADE ou EXTRA         |
+| tipo             | tipo_pagamento   | Sim         | MENSALIDADE ou EVENTO        |
 | status           | status_pagamento | Sim         | PAGO ou PENDENTE             |
 | data_criacao     | TIMESTAMP        | Sim         | Auditoria                    |
 | data_atualizacao | TIMESTAMP        | Não         | Auditoria                    |
@@ -169,6 +169,12 @@ Restrições adicionais:
 
 - idx_pagamento_mes_referencia (mes_referencia)
 
+Regra:
+
+mes_referencia obrigatório apenas se tipo = MENSALIDADE
+
+evento_id obrigatório apenas se tipo = EVENTO
+
 
 # Tabela: despesa
 Descrição: Armazena despesas do time.
@@ -182,6 +188,7 @@ Descrição: Armazena despesas do time.
 | mes_referencia   | DATE          | Sim         | Competência    |
 | data_criacao     | TIMESTAMP     | Sim         | Auditoria      |
 | data_atualizacao | TIMESTAMP     | Não         | Auditoria      |
+| tipo_despesa     | ENUM          | SIM         | Auditoria      |
 
 
 Relacionamento:
