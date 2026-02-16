@@ -103,7 +103,7 @@ Valores:
 
 - ADMIN
 
-- USUARIO
+- ATLETA
 
 # 🔷 Tipo Enumerado: tipo_pagamento
 
@@ -139,7 +139,7 @@ Descrição: Registra pagamentos realizados pelos atletas.
 | id               | UUID             | Sim         | Chave primária               |
 | time_id          | UUID             | Sim         | FK para time                 |
 | usuario_id       | UUID             | Sim         | FK para usuario              |
-| evento_id        | UUID             | Não(Condicional)         | FK opcional para jogo        |
+| evento_id        | UUID             | Não(Condicional)         | FK opcional para evento        |
 | mes_referencia   | DATE             | Não(Condicional)         | Competência (ex: 2026-02-01) |
 | valor            | NUMERIC(10,2)    | Sim         | Valor da cobrança            |
 | tipo             | tipo_pagamento   | Sim         | MENSALIDADE ou EVENTO        |
@@ -159,11 +159,11 @@ Restrições adicionais:
 
 - Para MENSALIDADE:
 
-  - UNIQUE (time_id, usuario_id, mes_referencia) apenas quando tipo = MENSALIDADE
+  - UNIQUE PARCIAL via índice (WHERE tipo = 'MENSALIDADE')
 
 - Para EVENTO:
 
-  - UNIQUE (time_id, usuario_id, evento_id) apenas quando tipo = EVENTO
+  - UNIQUE PARCIAL via índice (WHERE tipo = 'EVENTO')
   
 Índices recomendados:
 
@@ -210,15 +210,20 @@ Descrição: Armazena despesas do time.
 
 | Coluna           | Tipo          | Obrigatório | Observação     |
 | ---------------- | ------------- | ----------- | -------------- |
-| time_id          | UUID          | Sim         | FK para time   |
+| id               | UUID PK       | Sim         | PK para evento |
+| time_id          | UUID FK       | Sim         | FK para time   |
 | nome             | VARCHAR(255)  | Sim         | FK para time   |
 | descricao        | VARCHAR(255)  | Sim         | Descrição      |
 | valor_sugerido   | NUMERIC(10,2) | Não         | Valor          |
-| data_inicio      | TIMESTAMP     | Sim         | Auditoria      |
-| data_fim         | TIMESTAMP     | Sim         | Auditoria      |
-| ativo            | TIMESTAMP     | Não         | Auditoria      |
+| data_inicio      | DATE          | Sim         | Auditoria      |
+| data_fim         | DATE          | Sim         | Auditoria      |
+| ativo            | BOOLEAN       | Sim         | Auditoria      |
 | data_criacao     | TIMESTAMP     | Sim         | Auditoria      |
-| data_atualizacao | TIMESTAMP     | Sim         | Auditoria      |
+| data_atualizacao | TIMESTAMP     | Não         | Auditoria      |
+
+Relacionamentos:
+
+- FK: evento.time_id → time.id (ON DELETE CASCADE)
 
 # Diagrama de Relacionamentos
 
@@ -292,10 +297,25 @@ erDiagram
         TIMESTAMP data_atualizacao
     }
 
+    EVENTO {
+    UUID id PK
+    UUID time_id FK
+    VARCHAR nome
+    VARCHAR descricao
+    NUMERIC valor_sugerido
+    DATE data_inicio
+    DATE data_fim
+    BOOLEAN ativo
+    TIMESTAMP data_criacao
+    TIMESTAMP data_atualizacao
+    }
+
+
     TIME ||--o{ USUARIO : possui
     TIME ||--o{ JOGO : organiza
     TIME ||--o{ PAGAMENTO : registra
     TIME ||--o{ DESPESA : possui
+    TIME ||--o{ EVENTO : possui
 
     USUARIO ||--o{ PAGAMENTO : realiza
     EVENTO ||--o{ PAGAMENTO : referencia
