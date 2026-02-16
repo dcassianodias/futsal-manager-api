@@ -97,40 +97,6 @@ Relacionamento:
 
 - idx_jogo_time_id (time_id)
 
-# 🔷 Tipo Enumerado: perfil_usuario
-
-Valores:
-
-- ADMIN
-
-- ATLETA
-
-# 🔷 Tipo Enumerado: tipo_pagamento
-
-Valores possíveis:
-
-- MENSALIDADE
-
-- EVENTO
-
-# 🔷 Tipo Enumerado: status_pagamento
-
-Valores:
-
-- PAGO
-
-- PENDENTE
-
-# 🔷 Tipo Enumerado: status_jogo
-
-Valores:
-
-- AGENDADO
-
-- FINALIZADO
-
-- CANCELADO
-
 # Tabela: pagamento
 Descrição: Registra pagamentos realizados pelos atletas.
 
@@ -224,6 +190,40 @@ Descrição: Armazena despesas do time.
 Relacionamentos:
 
 - FK: evento.time_id → time.id (ON DELETE CASCADE)
+
+# 🔷 Tipo Enumerado: perfil_usuario
+
+Valores:
+
+- ADMIN
+
+- ATLETA
+
+# 🔷 Tipo Enumerado: tipo_pagamento
+
+Valores possíveis:
+
+- MENSALIDADE
+
+- EVENTO
+
+# 🔷 Tipo Enumerado: status_pagamento
+
+Valores:
+
+- PAGO
+
+- PENDENTE
+
+# 🔷 Tipo Enumerado: status_jogo
+
+Valores:
+
+- AGENDADO
+
+- FINALIZADO
+
+- CANCELADO
 
 # Diagrama de Relacionamentos
 
