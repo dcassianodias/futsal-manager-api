@@ -57,7 +57,7 @@ Descrição: Representa atleta ou administrador.
 | nome             | VARCHAR(150)   | Sim         | Nome completo       |
 | email            | VARCHAR(150)   | Sim         | Deve ser único      |
 | senha            | VARCHAR(255)   | Sim         | Senha criptografada |
-| perfil           | perfil_usuario | Sim         | ADMIN ou ATLETA     |
+| perfil           | perfil_usuario | Sim         | ADMIN ou USUARIO    |
 | ativo            | BOOLEAN        | Sim         | Status              |
 | data_criacao     | TIMESTAMP      | Sim         | Auditoria           |
 | data_atualizacao | TIMESTAMP      | Não         | Auditoria           |
@@ -103,7 +103,7 @@ Valores:
 
 - ADMIN
 
-- ATLETA
+- USUARIO
 
 # 🔷 Tipo Enumerado: tipo_pagamento
 
@@ -139,8 +139,8 @@ Descrição: Registra pagamentos realizados pelos atletas.
 | id               | UUID             | Sim         | Chave primária               |
 | time_id          | UUID             | Sim         | FK para time                 |
 | usuario_id       | UUID             | Sim         | FK para usuario              |
-| evento_id        | UUID             | Não         | FK opcional para jogo        |
-| mes_referencia   | DATE             | Sim         | Competência (ex: 2026-02-01) |
+| evento_id        | UUID             | Não(Condicional)         | FK opcional para jogo        |
+| mes_referencia   | DATE             | Não(Condicional)         | Competência (ex: 2026-02-01) |
 | valor            | NUMERIC(10,2)    | Sim         | Valor da cobrança            |
 | tipo             | tipo_pagamento   | Sim         | MENSALIDADE ou EVENTO        |
 | status           | status_pagamento | Sim         | PAGO ou PENDENTE             |
@@ -153,11 +153,17 @@ Relacionamentos:
 
 - FK: pagamento.usuario_id → usuario.id (ON DELETE CASCADE)
 
-- FK: pagamento.jogo_id → jogo.id (ON DELETE SET NULL)
+- FK: pagamento.evento_id → evento.id (ON DELETE SET NULL)
 
 Restrições adicionais:
 
-- UNIQUE (time_id, usuario_id, mes_referencia, tipo)
+- Para MENSALIDADE:
+
+  - UNIQUE (time_id, usuario_id, mes_referencia) apenas quando tipo = MENSALIDADE
+
+- Para EVENTO:
+
+  - UNIQUE (time_id, usuario_id, evento_id) apenas quando tipo = EVENTO
   
 Índices recomendados:
 
@@ -165,7 +171,7 @@ Restrições adicionais:
 
 - idx_pagamento_usuario_id (usuario_id)
 
-- idx_pagamento_jogo_id (jogo_id)
+- idx_pagamento_evento_id (evento_id)
 
 - idx_pagamento_mes_referencia (mes_referencia)
 
@@ -188,7 +194,7 @@ Descrição: Armazena despesas do time.
 | mes_referencia   | DATE          | Sim         | Competência    |
 | data_criacao     | TIMESTAMP     | Sim         | Auditoria      |
 | data_atualizacao | TIMESTAMP     | Não         | Auditoria      |
-| tipo_despesa     | ENUM          | SIM         | Auditoria      |
+| tipo             | TIPO_DESPESA  | SIM         | ALUGUEL_QUADRA, UNIFORME, EVENTO, OUTROS      |
 
 
 Relacionamento:
@@ -201,7 +207,7 @@ Relacionamento:
 
 # Diagrama de Relacionamentos
 
-- Um Time possui vários Atletas
+- Um Time possui vários Usuarios
 
 - Um Time possui vários Jogos
 
@@ -252,7 +258,7 @@ erDiagram
         UUID id PK
         UUID time_id FK
         UUID usuario_id FK
-        UUID jogo_id FK
+        UUID evento_id FK
         DATE mes_referencia
         NUMERIC valor
         ENUM tipo_pagamento
@@ -277,7 +283,7 @@ erDiagram
     TIME ||--o{ DESPESA : possui
 
     USUARIO ||--o{ PAGAMENTO : realiza
-    JOGO ||--o{ PAGAMENTO : referencia
+    EVENTO ||--o{ PAGAMENTO : referencia
 
 
 
