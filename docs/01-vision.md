@@ -71,7 +71,7 @@ Regras importantes:
 
 Desde a versão inicial, todas as entidades principais possuirão o campo:
 
-team_id
+time_id
 
 Isso permitirá que, no futuro, múltiplos times utilizem o mesmo sistema de forma isolada.
 
@@ -79,9 +79,9 @@ Modelo adotado:
 
 Single Database  
 Single Schema  
-Isolamento por coluna (team_id)
+Isolamento por coluna (time_id)
 
-Todas as consultas deverão filtrar obrigatoriamente pelo team_id do usuário autenticado.
+Todas as consultas deverão filtrar obrigatoriamente pelo time_id do usuário autenticado.
 
 ---
 
