@@ -113,6 +113,14 @@ Campos:
 - tipo (ALUGUEL_QUADRA | UNIFORME | EVENTO | OUTROS)
 - data_criacao
 
+Regras:
+- Apenas ADMIN pode registrar despesas
+- Despesas impactam a necessidade de arrecadação do mês
+
+---
+
+### 2.6 evento
+
 Evento:
 
 - id: UUID
@@ -124,12 +132,7 @@ Evento:
 - dataFim: LocalDate
 - ativo: Boolean
 - createdAt: LocalDateTime
-
-
-Regras:
-- Apenas ADMIN pode registrar despesas
-- Despesas impactam a necessidade de arrecadação do mês
-
+  
 ---
 
 ## 3. Relacionamentos
@@ -138,6 +141,9 @@ Time (1) → (N) Usuario
 Time (1) → (N) Jogo  
 Time (1) → (N) Pagamento  
 Time (1) → (N) Despesa  
+Time (1) -> (N) Evento
+
+Evento (1) -> (N) Pagamento (tipo EVENTO)
 
 Usuario (1) → (N) Pagamento  
 
@@ -162,10 +168,7 @@ Usuario (1) → (N) Pagamento
 
 Para o MVP:
 
-- id: Long (auto increment)
-- id_time: Long
-
-Evolução futura pode migrar para UUID se necessário.
+- “Estratégia de Identificadores” → UUID como padrão desde o MVP
 
 ---
 
