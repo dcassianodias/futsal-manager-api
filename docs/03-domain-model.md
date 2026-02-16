@@ -6,7 +6,7 @@ O sistema será estruturado em torno do conceito principal de Time.
 
 Todas as entidades operacionais estarão vinculadas a um Time através do campo:
 
-id_time
+time_id
 
 Essa decisão permite isolamento de dados e futura evolução para modelo SaaS multi-tenant.
 
@@ -40,7 +40,7 @@ Representa atleta ou administrador.
 Campos:
 
 - id
-- id_time
+- time_id
 - nome
 - email
 - senha
@@ -62,7 +62,7 @@ Representa um jogo agendado.
 Campos:
 
 - id
-- id_time
+- time_id
 - adversario
 - local
 - data_hora
@@ -83,8 +83,8 @@ Representa contribuição financeira de um atleta.
 Campos:
 
 - id
-- id_time
-- id_usuario
+- time_id
+- usuario_id
 - mes_referencia (YYYY-MM)
 - valor
 - tipo (MENSALIDADE | EVENTO)
@@ -106,7 +106,7 @@ Representa despesas do time.
 Campos:
 
 - id
-- id_time
+- time_id
 - descricao
 - valor
 - mes_referencia
@@ -152,7 +152,7 @@ Usuario (1) → (N) Pagamento
 ## 4. Regras de Negócio Fundamentais
 
 1. Todo usuário deve pertencer a um Time.
-2. Toda consulta deve ser filtrada por id_time.
+2. Toda consulta deve ser filtrada por time_id.
 3. Apenas ADMIN pode:
    - Criar jogos
    - Registrar despesas
@@ -189,7 +189,7 @@ Possíveis novas entidades:
 - Nunca expor Entity diretamente na API.
 - Utilizar DTO para entrada e saída.
 - Validar regras de negócio na camada Service.
-- Sempre validar id_time do usuário autenticado antes de qualquer operação.
+- Sempre validar time_id do usuário autenticado antes de qualquer operação.
 
 ---
 
