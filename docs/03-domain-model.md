@@ -90,7 +90,7 @@ Campos:
 - tipo (MENSALIDADE | EVENTO)
 - status (PAGO | PENDENTE)
 - data_criacao
-- eventoId
+- evento_id
 
 Regras:
 - Um Pagamento pertence a um Usuário
