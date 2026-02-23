@@ -1,6 +1,6 @@
-package com.futsalmanager.model.repositories;
+package com.futsalmanager.infrastructure.repositories;
 
-import com.futsalmanager.model.entities.Usuario;
+import com.futsalmanager.domain.entities.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

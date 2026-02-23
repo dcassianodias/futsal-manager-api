@@ -1,6 +1,6 @@
-package com.futsalmanager.model.repositories;
+package com.futsalmanager.infrastructure.repositories;
 
-import com.futsalmanager.model.entities.Evento;
+import com.futsalmanager.domain.entities.Evento;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
