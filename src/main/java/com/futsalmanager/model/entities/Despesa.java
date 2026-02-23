@@ -1,6 +1,6 @@
 package com.futsalmanager.model.entities;
 
-import com.futsalmanager.model.enums.PerfilUsuario;
+import com.futsalmanager.model.enums.TipoDespesa;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -8,13 +8,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "usuario")
-public class Usuario {
+@Table(name = "despesa")
+public class Despesa {
 
     @Id
     @GeneratedValue
@@ -25,22 +27,19 @@ public class Usuario {
     @JoinColumn(name = "time_id", nullable = false)
     private Time time;
 
-    @Column(nullable = false, length = 150)
-    private String nome;
-
-    @Column(nullable = false, length = 150)
-    private String email;
-
     @Column(nullable = false, length = 255)
-    private String senha;
+    private String descricao;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal valor;
+
+    @Column(name = "mes_referencia", nullable = false)
+    private LocalDate mesReferencia;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "tipo", nullable = false)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private PerfilUsuario perfil;
-
-    @Column(nullable = false)
-    private Boolean ativo;
+    private TipoDespesa tipoDespesa;
 
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
@@ -50,7 +49,18 @@ public class Usuario {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Usuario() {
+    protected Despesa() {}
+
+    public Despesa(UUID id, Time time, String descricao, BigDecimal valor, LocalDate mesReferencia,
+                   TipoDespesa tipoDespesa, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
+        this.id = id;
+        this.time = time;
+        this.descricao = descricao;
+        this.valor = valor;
+        this.mesReferencia = mesReferencia;
+        this.tipoDespesa = tipoDespesa;
+        this.dataCriacao = dataCriacao;
+        this.dataAtualizacao = dataAtualizacao;
     }
 
     public UUID getId() {
@@ -69,44 +79,36 @@ public class Usuario {
         this.time = time;
     }
 
-    public String getNome() {
-        return nome;
+    public String getDescricao() {
+        return descricao;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
     }
 
-    public String getEmail() {
-        return email;
+    public BigDecimal getValor() {
+        return valor;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setValor(BigDecimal valor) {
+        this.valor = valor;
     }
 
-    public String getSenha() {
-        return senha;
+    public LocalDate getMesReferencia() {
+        return mesReferencia;
     }
 
-    public void setSenha(String senha) {
-        this.senha = senha;
+    public void setMesReferencia(LocalDate mesReferencia) {
+        this.mesReferencia = mesReferencia;
     }
 
-    public PerfilUsuario getPerfil() {
-        return perfil;
+    public TipoDespesa getTipoDespesa() {
+        return tipoDespesa;
     }
 
-    public void setPerfil(PerfilUsuario perfil) {
-        this.perfil = perfil;
-    }
-
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
+    public void setTipoDespesa(TipoDespesa tipoDespesa) {
+        this.tipoDespesa = tipoDespesa;
     }
 
     public LocalDateTime getDataCriacao() {
@@ -127,8 +129,8 @@ public class Usuario {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Usuario usuario)) return false;
-        return Objects.equals(getId(), usuario.getId());
+        if (!(o instanceof Despesa despesa)) return false;
+        return Objects.equals(getId(), despesa.getId());
     }
 
     @Override

@@ -1,20 +1,19 @@
 package com.futsalmanager.model.entities;
 
-import com.futsalmanager.model.enums.PerfilUsuario;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "usuario")
-public class Usuario {
+@Table(name = "evento")
+public class Evento {
 
     @Id
     @GeneratedValue
@@ -28,16 +27,17 @@ public class Usuario {
     @Column(nullable = false, length = 150)
     private String nome;
 
-    @Column(nullable = false, length = 150)
-    private String email;
-
-    @Column(nullable = false, length = 255)
-    private String senha;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private PerfilUsuario perfil;
+    private String descricao;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal valorSugerido;
+
+    @Column(name = "data_inicio", nullable = false)
+    private LocalDate dataInicio;
+
+    @Column(name = "data_fim", nullable = false)
+    private LocalDate dataFim;
 
     @Column(nullable = false)
     private Boolean ativo;
@@ -50,7 +50,21 @@ public class Usuario {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Usuario() {
+    protected Evento() {
+    }
+
+    public Evento(UUID id, Time time, String nome, String descricao, BigDecimal valorSugerido, LocalDate dataInicio,
+                  LocalDate dataFim, Boolean ativo, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
+        this.id = id;
+        this.time = time;
+        this.nome = nome;
+        this.descricao = descricao;
+        this.valorSugerido = valorSugerido;
+        this.dataInicio = dataInicio;
+        this.dataFim = dataFim;
+        this.ativo = ativo;
+        this.dataCriacao = dataCriacao;
+        this.dataAtualizacao = dataAtualizacao;
     }
 
     public UUID getId() {
@@ -77,28 +91,36 @@ public class Usuario {
         this.nome = nome;
     }
 
-    public String getEmail() {
-        return email;
+    public String getDescricao() {
+        return descricao;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
     }
 
-    public String getSenha() {
-        return senha;
+    public BigDecimal getValorSugerido() {
+        return valorSugerido;
     }
 
-    public void setSenha(String senha) {
-        this.senha = senha;
+    public void setValorSugerido(BigDecimal valorSugerido) {
+        this.valorSugerido = valorSugerido;
     }
 
-    public PerfilUsuario getPerfil() {
-        return perfil;
+    public LocalDate getDataInicio() {
+        return dataInicio;
     }
 
-    public void setPerfil(PerfilUsuario perfil) {
-        this.perfil = perfil;
+    public void setDataInicio(LocalDate dataInicio) {
+        this.dataInicio = dataInicio;
+    }
+
+    public LocalDate getDataFim() {
+        return dataFim;
+    }
+
+    public void setDataFim(LocalDate dataFim) {
+        this.dataFim = dataFim;
     }
 
     public Boolean getAtivo() {
@@ -127,8 +149,8 @@ public class Usuario {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Usuario usuario)) return false;
-        return Objects.equals(getId(), usuario.getId());
+        if (!(o instanceof Evento evento)) return false;
+        return Objects.equals(getId(), evento.getId());
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.futsalmanager.model.entities;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
@@ -26,13 +28,15 @@ public class Time {
     @Column(nullable = false)
     private Boolean ativo;
 
-    @Column(name = "data_criacao", nullable = false)
+    @Column(name = "data_criacao", nullable = false, updatable = false)
+    @CreationTimestamp
     private LocalDateTime dataCriacao;
 
     @Column(name = "data_atualizacao")
+    @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    public Time() {
+    protected Time() {
     }
 
     public Time(UUID id, String nome, BigDecimal valorMensalidade, Boolean ativo, LocalDateTime dataCriacao,
