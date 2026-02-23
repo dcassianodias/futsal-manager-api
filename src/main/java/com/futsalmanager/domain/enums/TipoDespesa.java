@@ -1,4 +1,4 @@
-package com.futsalmanager.model.enums;
+package com.futsalmanager.domain.enums;
 
 public enum TipoDespesa {
 

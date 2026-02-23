@@ -1,6 +1,7 @@
-package com.futsalmanager.model.entities;
+package com.futsalmanager.domain.entities;
 
-import com.futsalmanager.model.enums.TipoDespesa;
+import com.futsalmanager.domain.enums.StatusPagamento;
+import com.futsalmanager.domain.enums.TipoPagamento;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -15,8 +16,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "despesa")
-public class Despesa {
+@Table(name = "pagamento")
+public class Pagamento {
 
     @Id
     @GeneratedValue
@@ -27,19 +28,29 @@ public class Despesa {
     @JoinColumn(name = "time_id", nullable = false)
     private Time time;
 
-    @Column(nullable = false, length = 255)
-    private String descricao;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal valor;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evento_id")
+    private Evento evento;
 
-    @Column(name = "mes_referencia", nullable = false)
+    @Column(name = "mes_referencia")
     private LocalDate mesReferencia;
+
+    @Column(name = "valor", nullable = false, precision = 10, scale = 2)
+    private BigDecimal valor;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private TipoDespesa tipoDespesa;
+    private TipoPagamento tipoPagamento;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private StatusPagamento statusPagamento;
 
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
@@ -49,16 +60,19 @@ public class Despesa {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Despesa() {}
+    protected Pagamento() {}
 
-    public Despesa(UUID id, Time time, String descricao, BigDecimal valor, LocalDate mesReferencia,
-                   TipoDespesa tipoDespesa, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
+    public Pagamento(UUID id, Time time, Usuario usuario, Evento evento, LocalDate mesReferencia,
+                     BigDecimal valor, TipoPagamento tipoPagamento, StatusPagamento statusPagamento,
+                     LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
         this.id = id;
         this.time = time;
-        this.descricao = descricao;
-        this.valor = valor;
+        this.usuario = usuario;
+        this.evento = evento;
         this.mesReferencia = mesReferencia;
-        this.tipoDespesa = tipoDespesa;
+        this.valor = valor;
+        this.tipoPagamento = tipoPagamento;
+        this.statusPagamento = statusPagamento;
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
     }
@@ -79,20 +93,20 @@ public class Despesa {
         this.time = time;
     }
 
-    public String getDescricao() {
-        return descricao;
+    public Usuario getUsuario() {
+        return usuario;
     }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
-    public BigDecimal getValor() {
-        return valor;
+    public Evento getEvento() {
+        return evento;
     }
 
-    public void setValor(BigDecimal valor) {
-        this.valor = valor;
+    public void setEvento(Evento evento) {
+        this.evento = evento;
     }
 
     public LocalDate getMesReferencia() {
@@ -103,12 +117,28 @@ public class Despesa {
         this.mesReferencia = mesReferencia;
     }
 
-    public TipoDespesa getTipoDespesa() {
-        return tipoDespesa;
+    public BigDecimal getValor() {
+        return valor;
     }
 
-    public void setTipoDespesa(TipoDespesa tipoDespesa) {
-        this.tipoDespesa = tipoDespesa;
+    public void setValor(BigDecimal valor) {
+        this.valor = valor;
+    }
+
+    public TipoPagamento getTipoPagamento() {
+        return tipoPagamento;
+    }
+
+    public void setTipoPagamento(TipoPagamento tipoPagamento) {
+        this.tipoPagamento = tipoPagamento;
+    }
+
+    public StatusPagamento getStatusPagamento() {
+        return statusPagamento;
+    }
+
+    public void setStatusPagamento(StatusPagamento statusPagamento) {
+        this.statusPagamento = statusPagamento;
     }
 
     public LocalDateTime getDataCriacao() {
@@ -129,8 +159,8 @@ public class Despesa {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Despesa despesa)) return false;
-        return Objects.equals(getId(), despesa.getId());
+        if (!(o instanceof Pagamento pagamento)) return false;
+        return Objects.equals(getId(), pagamento.getId());
     }
 
     @Override

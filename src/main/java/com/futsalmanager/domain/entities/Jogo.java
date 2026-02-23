@@ -1,6 +1,6 @@
-package com.futsalmanager.model.entities;
+package com.futsalmanager.domain.entities;
 
-import com.futsalmanager.model.enums.StatusJogo;
+import com.futsalmanager.domain.enums.StatusJogo;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;

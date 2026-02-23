@@ -1,29 +1,43 @@
-package com.futsalmanager.model.entities;
+package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.domain.enums.PerfilUsuario;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "time")
-public class Time {
+@Table(name = "usuario")
+public class Usuario {
 
     @Id
     @GeneratedValue
     @UuidGenerator
     private UUID id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_id", nullable = false)
+    private Time time;
+
     @Column(nullable = false, length = 150)
     private String nome;
 
-    @Column(name = "valor_mensalidade", nullable = false, precision = 10, scale = 2)
-    private BigDecimal valorMensalidade;
+    @Column(nullable = false, length = 150)
+    private String email;
+
+    @Column(nullable = false, length = 255)
+    private String senha;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private PerfilUsuario perfil;
 
     @Column(nullable = false)
     private Boolean ativo;
@@ -36,17 +50,7 @@ public class Time {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Time() {
-    }
-
-    public Time(UUID id, String nome, BigDecimal valorMensalidade, Boolean ativo, LocalDateTime dataCriacao,
-                LocalDateTime dataAtualizacao) {
-        this.id = id;
-        this.nome = nome;
-        this.valorMensalidade = valorMensalidade;
-        this.ativo = ativo;
-        this.dataCriacao = dataCriacao;
-        this.dataAtualizacao = dataAtualizacao;
+    protected Usuario() {
     }
 
     public UUID getId() {
@@ -57,6 +61,14 @@ public class Time {
         this.id = id;
     }
 
+    public Time getTime() {
+        return time;
+    }
+
+    public void setTime(Time time) {
+        this.time = time;
+    }
+
     public String getNome() {
         return nome;
     }
@@ -65,12 +77,28 @@ public class Time {
         this.nome = nome;
     }
 
-    public BigDecimal getValorMensalidade() {
-        return valorMensalidade;
+    public String getEmail() {
+        return email;
     }
 
-    public void setValorMensalidade(BigDecimal valorMensalidade) {
-        this.valorMensalidade = valorMensalidade;
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public PerfilUsuario getPerfil() {
+        return perfil;
+    }
+
+    public void setPerfil(PerfilUsuario perfil) {
+        this.perfil = perfil;
     }
 
     public Boolean getAtivo() {
@@ -99,14 +127,12 @@ public class Time {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Time time)) return false;
-        return id != null && id.equals(time.id);
+        if (!(o instanceof Usuario usuario)) return false;
+        return Objects.equals(getId(), usuario.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hashCode(getId());
     }
-
 }

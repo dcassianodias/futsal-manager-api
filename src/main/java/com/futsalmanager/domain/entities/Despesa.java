@@ -1,9 +1,12 @@
-package com.futsalmanager.model.entities;
+package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.domain.enums.TipoDespesa;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,8 +15,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "evento")
-public class Evento {
+@Table(name = "despesa")
+public class Despesa {
 
     @Id
     @GeneratedValue
@@ -24,23 +27,19 @@ public class Evento {
     @JoinColumn(name = "time_id", nullable = false)
     private Time time;
 
-    @Column(nullable = false, length = 150)
-    private String nome;
-
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String descricao;
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal valorSugerido;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal valor;
 
-    @Column(name = "data_inicio", nullable = false)
-    private LocalDate dataInicio;
+    @Column(name = "mes_referencia", nullable = false)
+    private LocalDate mesReferencia;
 
-    @Column(name = "data_fim", nullable = false)
-    private LocalDate dataFim;
-
-    @Column(nullable = false)
-    private Boolean ativo;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private TipoDespesa tipoDespesa;
 
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
@@ -50,19 +49,16 @@ public class Evento {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Evento() {
-    }
+    protected Despesa() {}
 
-    public Evento(UUID id, Time time, String nome, String descricao, BigDecimal valorSugerido, LocalDate dataInicio,
-                  LocalDate dataFim, Boolean ativo, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
+    public Despesa(UUID id, Time time, String descricao, BigDecimal valor, LocalDate mesReferencia,
+                   TipoDespesa tipoDespesa, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
         this.id = id;
         this.time = time;
-        this.nome = nome;
         this.descricao = descricao;
-        this.valorSugerido = valorSugerido;
-        this.dataInicio = dataInicio;
-        this.dataFim = dataFim;
-        this.ativo = ativo;
+        this.valor = valor;
+        this.mesReferencia = mesReferencia;
+        this.tipoDespesa = tipoDespesa;
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
     }
@@ -83,14 +79,6 @@ public class Evento {
         this.time = time;
     }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
     public String getDescricao() {
         return descricao;
     }
@@ -99,36 +87,28 @@ public class Evento {
         this.descricao = descricao;
     }
 
-    public BigDecimal getValorSugerido() {
-        return valorSugerido;
+    public BigDecimal getValor() {
+        return valor;
     }
 
-    public void setValorSugerido(BigDecimal valorSugerido) {
-        this.valorSugerido = valorSugerido;
+    public void setValor(BigDecimal valor) {
+        this.valor = valor;
     }
 
-    public LocalDate getDataInicio() {
-        return dataInicio;
+    public LocalDate getMesReferencia() {
+        return mesReferencia;
     }
 
-    public void setDataInicio(LocalDate dataInicio) {
-        this.dataInicio = dataInicio;
+    public void setMesReferencia(LocalDate mesReferencia) {
+        this.mesReferencia = mesReferencia;
     }
 
-    public LocalDate getDataFim() {
-        return dataFim;
+    public TipoDespesa getTipoDespesa() {
+        return tipoDespesa;
     }
 
-    public void setDataFim(LocalDate dataFim) {
-        this.dataFim = dataFim;
-    }
-
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
+    public void setTipoDespesa(TipoDespesa tipoDespesa) {
+        this.tipoDespesa = tipoDespesa;
     }
 
     public LocalDateTime getDataCriacao() {
@@ -149,8 +129,8 @@ public class Evento {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Evento evento)) return false;
-        return Objects.equals(getId(), evento.getId());
+        if (!(o instanceof Despesa despesa)) return false;
+        return Objects.equals(getId(), despesa.getId());
     }
 
     @Override
