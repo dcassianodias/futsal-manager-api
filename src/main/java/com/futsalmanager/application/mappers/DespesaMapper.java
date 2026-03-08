@@ -6,6 +6,8 @@ import com.futsalmanager.domain.entities.Despesa;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface DespesaMapper {
 
@@ -13,6 +15,7 @@ public interface DespesaMapper {
     @Mapping(target = "timeId", source = "time.id")
     @Mapping(target = "tipo", source = "tipoDespesa")
     DespesaResponse toResponse(Despesa entity);
+    List<DespesaResponse> toResponseList(List<Despesa> list);
 
     //Request -> Entity
     @Mapping(target = "id", ignore = true)
