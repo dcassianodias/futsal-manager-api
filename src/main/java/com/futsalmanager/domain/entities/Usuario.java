@@ -50,7 +50,7 @@ public class Usuario {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Usuario() {
+    public Usuario() {
     }
 
     public UUID getId() {
