@@ -1,14 +1,14 @@
 package com.futsalmanager.api.controller;
 
 import com.futsalmanager.api.dto.request.DespesaCreateRequest;
+import com.futsalmanager.api.dto.request.DespesaUpdateRequest;
 import com.futsalmanager.api.dto.response.DespesaResponse;
-import com.futsalmanager.application.mappers.DespesaMapper;
 import com.futsalmanager.application.services.DespesaService;
-import com.futsalmanager.domain.entities.Despesa;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,24 +17,53 @@ import java.util.UUID;
 public class DespesaController {
 
     private final DespesaService service;
-    private final DespesaMapper mapper;
 
-    public DespesaController(DespesaService service, DespesaMapper mapper) {
+    public DespesaController(DespesaService service) {
         this.service = service;
-        this.mapper = mapper;
+    }
+
+    @GetMapping("/{id}")
+    public DespesaResponse findById(@PathVariable UUID id){
+        return service.findById(id);
+    }
+
+    @GetMapping
+    public List<DespesaResponse> findAll(){
+        return service.findAll();
+    }
+
+    @GetMapping("/time/{timeId}")
+    public ResponseEntity<List<DespesaResponse>> findByTime(@PathVariable UUID timeId){
+        List<DespesaResponse> list = service.findByTime(timeId);
+        if (list.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(list);
     }
 
     @PostMapping
     public ResponseEntity<DespesaResponse> create(@RequestBody DespesaCreateRequest request){
-        Despesa saved = service.criar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(saved));
+        DespesaResponse created = service.create(request);
+
+        URI uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.id())
+                .toUri();
+
+        return ResponseEntity.created(uri).body(created);
     }
 
-    public ResponseEntity<List<DespesaResponse>> findByTime(@PathVariable UUID timeId){
-        List<DespesaResponse> response = service.listarPorTime(timeId).stream()
-                .map(mapper::toResponse)
-                .toList();
-
-        return ResponseEntity.ok(response);
+    @PutMapping("/{id}")
+    public ResponseEntity<DespesaResponse> update(@PathVariable UUID id, @RequestBody DespesaUpdateRequest request){
+        return ResponseEntity.ok(service.update(id, request));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id){
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+
 }
