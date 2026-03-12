@@ -60,7 +60,7 @@ public class Pagamento {
     @UpdateTimestamp
     private LocalDateTime dataAtualizacao;
 
-    protected Pagamento() {}
+    public Pagamento() {}
 
     public Pagamento(UUID id, Time time, Usuario usuario, Evento evento, LocalDate mesReferencia,
                      BigDecimal valor, TipoPagamento tipoPagamento, StatusPagamento statusPagamento,
