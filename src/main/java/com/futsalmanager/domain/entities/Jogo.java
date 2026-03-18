@@ -39,6 +39,7 @@ public class Jogo {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private StatusJogo statusJogo;
 
+    @Column(columnDefinition = "text")
     private String observacoes;
 
     @CreationTimestamp
@@ -139,12 +140,13 @@ public class Jogo {
 
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (!(o instanceof Jogo jogo)) return false;
-        return Objects.equals(getId(), jogo.getId());
+        return id != null && id.equals(jogo.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getId());
+        return Objects.hash(id);
     }
 }
