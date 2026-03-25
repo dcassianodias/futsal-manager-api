@@ -14,13 +14,13 @@ public interface EventoMapper {
     //Entity -> Response
     @Mapping(target = "timeId", source = "time.id")
     EventoResponse toResponse(Evento entity);
-    List<EventoResponse> toResponseList(List<Evento> entity);
+    List<EventoResponse> toResponseList(List<Evento> entities);
 
     //Request -> Entity
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "time", ignore = true) // será setado no Service
-    @Mapping(target = "ativo", ignore = true) // novo evento é sempre ativo
+    @Mapping(target = "ativo", constant = "true") // novo evento é sempre ativo
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
-    Evento toEntity(EventoCreateRequest entity);
+    Evento toEntity(EventoCreateRequest request);
 }

@@ -20,7 +20,7 @@ public interface JogoMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "time", ignore = true)
-    @Mapping(target = "statusJogo", ignore = true)
+    @Mapping(target = "statusJogo", constant = "AGENDADO")
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
     Jogo toEntity(JogoCreateRequest request);

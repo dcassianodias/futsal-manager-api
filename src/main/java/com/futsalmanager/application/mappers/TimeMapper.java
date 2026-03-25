@@ -26,6 +26,7 @@ public interface TimeMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "ativo", constant = "true")
     void updateEntityFromRequest(TimeUpdateRequest request, @MappingTarget Time entity);
 
 }

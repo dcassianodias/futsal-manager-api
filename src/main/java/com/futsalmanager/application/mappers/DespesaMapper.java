@@ -23,5 +23,6 @@ public interface DespesaMapper {
     @Mapping(target = "tipoDespesa", source = "tipo")
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "ativo", constant = "true")
     Despesa toEntity(DespesaCreateRequest request);
 }

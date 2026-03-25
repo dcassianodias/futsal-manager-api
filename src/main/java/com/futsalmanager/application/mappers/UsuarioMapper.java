@@ -14,13 +14,16 @@ public interface UsuarioMapper {
     //Entity -> Response
     @Mapping(target = "timeId", source = "time.id")
     UsuarioResponse toResponse(Usuario entity);
+
     List<UsuarioResponse> toResponseList(List<Usuario> entities);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "time", ignore = true) // será setado no Service
+    @Mapping(target = "time", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "senha", source = "senha")
+    @Mapping(target = "ativo", constant = "true")
+    @Mapping(target = "email", expression = "java(request.email().toLowerCase())")
+    @Mapping(target = "perfil", constant = "ATLETA")
     Usuario toEntity(UsuarioCreateRequest request);
 
 
