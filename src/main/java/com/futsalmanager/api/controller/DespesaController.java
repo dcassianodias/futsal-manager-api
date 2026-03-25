@@ -4,6 +4,7 @@ import com.futsalmanager.api.dto.request.DespesaCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaUpdateRequest;
 import com.futsalmanager.api.dto.response.DespesaResponse;
 import com.futsalmanager.application.services.DespesaService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -35,14 +36,12 @@ public class DespesaController {
     @GetMapping("/time/{timeId}")
     public ResponseEntity<List<DespesaResponse>> findByTime(@PathVariable UUID timeId){
         List<DespesaResponse> list = service.findByTime(timeId);
-        if (list.isEmpty()){
-            return ResponseEntity.noContent().build();
-        }
+
         return ResponseEntity.ok(list);
     }
 
     @PostMapping
-    public ResponseEntity<DespesaResponse> create(@RequestBody DespesaCreateRequest request){
+    public ResponseEntity<DespesaResponse> create(@RequestBody @Valid DespesaCreateRequest request){
         DespesaResponse created = service.create(request);
 
         URI uri = ServletUriComponentsBuilder
@@ -55,7 +54,8 @@ public class DespesaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DespesaResponse> update(@PathVariable UUID id, @RequestBody DespesaUpdateRequest request){
+    public ResponseEntity<DespesaResponse> update(@PathVariable UUID id,
+                                                  @RequestBody @Valid DespesaUpdateRequest request){
         return ResponseEntity.ok(service.update(id, request));
     }
 
