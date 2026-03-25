@@ -4,6 +4,7 @@ import com.futsalmanager.api.dto.request.TimeCreateRequest;
 import com.futsalmanager.api.dto.request.TimeUpdateRequest;
 import com.futsalmanager.api.dto.response.TimeResponse;
 import com.futsalmanager.application.services.TimeService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -34,7 +35,7 @@ public class TimeController {
     }
 
     @PostMapping
-    public ResponseEntity<TimeResponse> create(@RequestBody TimeCreateRequest timeDto){
+    public ResponseEntity<TimeResponse> create(@RequestBody @Valid TimeCreateRequest timeDto){
         TimeResponse createdTime = timeService.create(timeDto);
 
         URI uri = ServletUriComponentsBuilder
@@ -47,7 +48,7 @@ public class TimeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TimeResponse> update(@PathVariable UUID id, @RequestBody TimeUpdateRequest request){
+    public ResponseEntity<TimeResponse> update(@PathVariable UUID id, @RequestBody @Valid TimeUpdateRequest request){
         return ResponseEntity.ok(timeService.update(id, request));
     }
 

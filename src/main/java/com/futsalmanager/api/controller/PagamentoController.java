@@ -5,6 +5,7 @@ import com.futsalmanager.api.dto.response.EventoResponse;
 import com.futsalmanager.api.dto.response.GerarMensalidadeResponse;
 import com.futsalmanager.api.dto.response.PagamentoResponse;
 import com.futsalmanager.application.services.PagamentoService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -61,7 +62,7 @@ public class PagamentoController {
     }
 
     @PostMapping
-    public ResponseEntity<PagamentoResponse> create(@RequestBody PagamentoCreateRequest request){
+    public ResponseEntity<PagamentoResponse> create(@RequestBody @Valid PagamentoCreateRequest request){
         PagamentoResponse created = pagamentoService.create(request);
 
         URI uri = ServletUriComponentsBuilder
@@ -74,7 +75,7 @@ public class PagamentoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PagamentoResponse> update(@PathVariable UUID id, @RequestBody PagamentoUpdateRequest request){
+    public ResponseEntity<PagamentoResponse> update(@PathVariable UUID id, @RequestBody @Valid PagamentoUpdateRequest request){
         return ResponseEntity.ok(pagamentoService.update(id, request));
     }
 
@@ -84,7 +85,7 @@ public class PagamentoController {
     }
 
     @PostMapping("/mensalidades/gerar")
-    public ResponseEntity<GerarMensalidadeResponse> gerarMensalidades(@RequestBody GerarMensalidadeRequest request) {
+    public ResponseEntity<GerarMensalidadeResponse> gerarMensalidades(@RequestBody @Valid GerarMensalidadeRequest request) {
         return ResponseEntity.ok(pagamentoService.gerarMensalidades(request));
     }
 

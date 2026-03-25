@@ -4,6 +4,7 @@ import com.futsalmanager.api.dto.request.EventoCreateRequest;
 import com.futsalmanager.api.dto.request.EventoUpdateRequest;
 import com.futsalmanager.api.dto.response.EventoResponse;
 import com.futsalmanager.application.services.EventoService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -42,7 +43,7 @@ public class EventoController {
     }
 
     @PostMapping
-    public ResponseEntity<EventoResponse> create(@RequestBody EventoCreateRequest request){
+    public ResponseEntity<EventoResponse> create(@RequestBody @Valid EventoCreateRequest request){
         EventoResponse created = service.create(request);
 
         URI uri = ServletUriComponentsBuilder
@@ -55,7 +56,7 @@ public class EventoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EventoResponse> update(@PathVariable UUID id, @RequestBody EventoUpdateRequest request){
+    public ResponseEntity<EventoResponse> update(@PathVariable UUID id, @RequestBody @Valid EventoUpdateRequest request){
         return ResponseEntity.ok(service.update(id, request));
     }
 
