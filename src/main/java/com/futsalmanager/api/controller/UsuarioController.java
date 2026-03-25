@@ -4,6 +4,7 @@ import com.futsalmanager.api.dto.request.UsuarioCreateRequest;
 import com.futsalmanager.api.dto.request.UsuarioUpdateRequest;
 import com.futsalmanager.api.dto.response.UsuarioResponse;
 import com.futsalmanager.application.services.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -33,12 +34,12 @@ public class UsuarioController {
     }
 
     @GetMapping("/time/{timeId}")
-    public List<UsuarioResponse> findByTimeId(UUID timeId){
+    public List<UsuarioResponse> findByTimeId(@PathVariable UUID timeId){
         return service.findByTimeId(timeId);
     }
 
     @PostMapping
-    public ResponseEntity<UsuarioResponse> create(@RequestBody UsuarioCreateRequest request){
+    public ResponseEntity<UsuarioResponse> create(@RequestBody @Valid UsuarioCreateRequest request){
         UsuarioResponse created = service.create(request);
 
         URI uri = ServletUriComponentsBuilder
@@ -51,7 +52,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponse> update(@PathVariable UUID id, @RequestBody UsuarioUpdateRequest request){
+    public ResponseEntity<UsuarioResponse> update(@PathVariable UUID id, @RequestBody @Valid UsuarioUpdateRequest request){
         return ResponseEntity.ok(service.update(id, request));
     }
 
@@ -59,5 +60,10 @@ public class UsuarioController {
     public ResponseEntity<Void> delete(@PathVariable UUID id){
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/reativar")
+    public ResponseEntity<UsuarioResponse> reativar(@PathVariable UUID id){
+        return ResponseEntity.ok(service.reativar(id));
     }
 }
