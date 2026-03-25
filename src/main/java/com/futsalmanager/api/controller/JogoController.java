@@ -4,6 +4,7 @@ import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
 import com.futsalmanager.api.dto.response.JogoResponse;
 import com.futsalmanager.application.services.JogoService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -42,7 +43,7 @@ public class JogoController {
     }
 
     @PostMapping
-    public ResponseEntity<JogoResponse> create(@RequestBody JogoCreateRequest request){
+    public ResponseEntity<JogoResponse> create(@RequestBody @Valid JogoCreateRequest request){
         JogoResponse created = service.create(request);
 
         URI uri = ServletUriComponentsBuilder
@@ -55,13 +56,17 @@ public class JogoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JogoResponse> update(@PathVariable UUID id, @RequestBody JogoUpdateRequest request){
+    public ResponseEntity<JogoResponse> update(@PathVariable UUID id, @RequestBody @Valid JogoUpdateRequest request){
         return ResponseEntity.ok(service.update(id, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id){
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    @PatchMapping("/{id}/finalizar")
+    public ResponseEntity<JogoResponse> finalizar(@PathVariable UUID id){
+        return ResponseEntity.ok(service.finalizar(id));
+    }
+
+    @PatchMapping("/{id}/cancelar")
+    public ResponseEntity<JogoResponse> cancelar(@PathVariable UUID id){
+        return ResponseEntity.ok(service.cancelar(id));
     }
 }
