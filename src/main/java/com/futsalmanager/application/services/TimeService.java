@@ -3,6 +3,7 @@ package com.futsalmanager.application.services;
 import com.futsalmanager.api.dto.request.TimeCreateRequest;
 import com.futsalmanager.api.dto.request.TimeUpdateRequest;
 import com.futsalmanager.api.dto.response.TimeResponse;
+import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.TimeMapper;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
@@ -29,7 +30,7 @@ public class TimeService {
     @Transactional(readOnly = true)
     public TimeResponse findById(UUID id) {
         Time entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Time não encontrado" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
         return timeMapper.toResponse(entity);
     }
@@ -40,58 +41,43 @@ public class TimeService {
         return timeMapper.toResponseList(list);
     }
 
+    @Transactional
     public TimeResponse create(TimeCreateRequest request) {
 
-        if (request.nome() == null || request.nome().isBlank()){
-            throw new RuntimeException("O nome do time é obrigatório");
-        }
-        if (request.valorMensalidade() == null || request.valorMensalidade().signum() <= 0){
-            throw new RuntimeException("O valor da mensalidade deve ser maior que zero");
-        }
-        if (request.ativo() == null){
-            throw new RuntimeException("O campo ativo é obrigatório");
-        }
-
         Time entity = timeMapper.toEntity(request);
+
         Time saved = repository.save(entity);
-        log.info("Time criado com sucesso: id={}, nome={}", saved.getId(), saved.getNome());
+
+        log.info("Time criado: id={}, nome={}", saved.getId(), saved.getNome());
 
         return timeMapper.toResponse(saved);
-
     }
 
     @Transactional
     public TimeResponse update(UUID id, TimeUpdateRequest request) {
         Time entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Time não encontrado" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
-        if (request.nome() != null && request.nome().isBlank()){
-            throw new RuntimeException("O nome do time é obrigatório");
-        }
-        if (request.valorMensalidade() == null || request.valorMensalidade().signum() <= 0){
-            throw new RuntimeException("O valor da mensalidade deve ser maior que zero");
-        }
-
-        //Aplica update via MapStruct
         timeMapper.updateEntityFromRequest(request, entity);
+
         Time saved = repository.save(entity);
 
-        log.info("Time atualizado com sucesso: id={}, nome={}", saved.getId(), saved.getNome());
+        log.info("Time atualizado: id={}, nome={}", saved.getId(), saved.getNome());
 
         return timeMapper.toResponse(saved);
     }
 
+    @Transactional
     public TimeResponse delete(UUID id) {
         Time entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Time não encontrado" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado" + id));
 
         TimeResponse dto = timeMapper.toResponse(entity);
 
         repository.delete(entity);
-        log.info("Time deletado com sucesso: id={}, nome={}", entity.getId(), entity.getNome());
+        log.info("Time deletado: id={}, nome={}", entity.getId(), entity.getNome());
 
         return dto;
     }
-
 
 }

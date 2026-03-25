@@ -5,7 +5,10 @@ import com.futsalmanager.api.dto.request.PagamentoCreateRequest;
 import com.futsalmanager.api.dto.request.PagamentoUpdateRequest;
 import com.futsalmanager.api.dto.response.GerarMensalidadeResponse;
 import com.futsalmanager.api.dto.response.PagamentoResponse;
+import com.futsalmanager.application.exceptions.BusinessException;
+import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.PagamentoMapper;
+import com.futsalmanager.application.validators.PagamentoValidator;
 import com.futsalmanager.domain.entities.Evento;
 import com.futsalmanager.domain.entities.Pagamento;
 import com.futsalmanager.domain.entities.Time;
@@ -30,24 +33,26 @@ public class PagamentoService {
 
     private final PagamentoRepository pagamentoRepository;
     private final TimeRepository timeRepository;
-    private UsuarioRepository usuarioRepository;
-    private EventoRepository eventoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final EventoRepository eventoRepository;
     private final PagamentoMapper pagamentoMapper;
+    private final PagamentoValidator validator;
 
     public PagamentoService(PagamentoRepository pagamentoRepository, TimeRepository timeRepository,
                             UsuarioRepository usuarioRepository, EventoRepository eventoRepository,
-                            PagamentoMapper pagamentoMapper) {
+                            PagamentoMapper pagamentoMapper, PagamentoValidator validator) {
         this.pagamentoRepository = pagamentoRepository;
         this.timeRepository = timeRepository;
         this.usuarioRepository = usuarioRepository;
         this.eventoRepository = eventoRepository;
         this.pagamentoMapper = pagamentoMapper;
+        this.validator = validator;
     }
 
     @Transactional(readOnly = true)
     public PagamentoResponse findById(UUID id) {
         Pagamento entity = pagamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
         return pagamentoMapper.toResponse(entity);
     }
 
@@ -64,58 +69,21 @@ public class PagamentoService {
 
     @Transactional
     public PagamentoResponse create(PagamentoCreateRequest request) {
-        if (request.timeId() == null) {
-            throw new IllegalArgumentException("Time do pagamento é obrigatório.");
-        }
-
-        if (request.usuarioId() == null) {
-            throw new IllegalArgumentException("Usuário do pagamento é obrigatório.");
-        }
-
-        if (request.valor() == null || request.valor().signum() <= 0) {
-            throw new IllegalArgumentException("Valor do pagamento é obrigatório.");
-        }
-
-        if (request.tipo() == null) {
-            throw new IllegalArgumentException("Tipo do pagamento é obrigatório.");
-        }
 
         Time time = timeRepository.findById(request.timeId())
-                .orElseThrow(() -> new RuntimeException("Time não encontrado: " + request.timeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + request.timeId()));
 
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + request.usuarioId()));
-
-        if (!usuario.getTime().getId().equals(time.getId())) {
-            throw new IllegalArgumentException("Usuário não pertence ao time informado.");
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + request.usuarioId()));
 
         Evento evento = null;
 
-        if (request.tipo() == TipoPagamento.MENSALIDADE) {
-            if (request.mesReferencia() == null) {
-                throw new IllegalArgumentException("Mês de referência do pagamento é obrigatório para mensalidade.");
-            }
-            if (request.eventoId() != null) {
-                throw new IllegalArgumentException("Mensalidade não pode ter evento associado.");
-            }
-        }
-
         if (request.tipo() == TipoPagamento.EVENTO) {
-            if (request.eventoId() == null) {
-                throw new IllegalArgumentException("Evento do pagamento é obrigatório para pagamento de evento.");
-            }
-            if (request.mesReferencia() != null) {
-                throw new IllegalArgumentException("Pagamento de evento não pode ter mês de referência.");
-            }
-
             evento = eventoRepository.findById(request.eventoId())
-                    .orElseThrow(() -> new RuntimeException("Evento não encontrado: " + request.eventoId()));
-
-            if (!evento.getTime().getId().equals(time.getId())) {
-                throw new IllegalArgumentException("Evento não pertence ao time informado.");
-            }
+                    .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + request.eventoId()));
         }
+
+        validator.validarCreate(request, usuario, evento);
 
         Pagamento pagamento = pagamentoMapper.toEntity(request);
         pagamento.setTime(time);
@@ -125,7 +93,7 @@ public class PagamentoService {
 
         Pagamento saved = pagamentoRepository.save(pagamento);
 
-        log.info("Pagamento criado com sucesso: id={}, valor={}, tipo={}", saved.getId(), saved.getValor(),
+        log.info("Pagamento criado: id={}, valor={}, tipo={}", saved.getId(), saved.getValor(),
                 saved.getTipoPagamento());
 
         return pagamentoMapper.toResponse(saved);
@@ -133,14 +101,26 @@ public class PagamentoService {
 
     @Transactional
     public PagamentoResponse update(UUID id, PagamentoUpdateRequest request) {
-        Pagamento entity = pagamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado: " + id));
 
-        if (request.valor() == null || request.valor().signum() <= 0) {
-            throw new IllegalArgumentException("Valor do pagamento deve ser maior que zero.");
-        }
+        Pagamento entity = pagamentoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
+
+        validator.validarUpdate(entity, request);
 
         entity.setValor(request.valor());
+
+        if (entity.getTipoPagamento() == TipoPagamento.MENSALIDADE) {
+            entity.setMesReferencia(request.mesReferencia());
+            entity.setEvento(null);
+        }
+
+        if (entity.getTipoPagamento() == TipoPagamento.EVENTO) {
+            Evento evento = eventoRepository.findById(request.eventoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + request.eventoId()));
+
+            entity.setEvento(evento);
+            entity.setMesReferencia(null);
+        }
 
         Pagamento updated = pagamentoRepository.save(entity);
 
@@ -154,15 +134,15 @@ public class PagamentoService {
     public GerarMensalidadeResponse gerarMensalidades(GerarMensalidadeRequest request) {
 
         if (request.timeId() == null) {
-            throw new IllegalArgumentException("Time é obrigatório para gerar mensalidades.");
+            throw new BusinessException("Time é obrigatório para gerar mensalidades.");
         }
 
         if (request.mesReferencia() == null) {
-            throw new IllegalArgumentException("Mês de referência é obrigatório para gerar mensalidades.");
+            throw new BusinessException("Mês de referência é obrigatório para gerar mensalidades.");
         }
 
         Time time = timeRepository.findById(request.timeId())
-                .orElseThrow(() -> new RuntimeException("Time não encontrado: " + request.timeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + request.timeId()));
 
         List<Usuario> atletas = usuarioRepository
                 .findByTimeIdAndPerfilAndAtivoTrue(request.timeId(), PerfilUsuario.ATLETA);
@@ -212,7 +192,7 @@ public class PagamentoService {
     @Transactional
     public void delete(UUID id) {
         Pagamento entity = pagamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
 
         pagamentoRepository.delete(entity);
 
@@ -240,10 +220,10 @@ public class PagamentoService {
 
     public PagamentoResponse marcarComoPago(UUID id) {
         Pagamento entity = pagamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
 
         if (entity.getStatusPagamento() == StatusPagamento.PAGO) {
-            throw new IllegalStateException("Atleta já está marcado como pago");
+            throw new BusinessException("Pagamento já está marcado como pago");
         }
 
         entity.setStatusPagamento(StatusPagamento.PAGO);
