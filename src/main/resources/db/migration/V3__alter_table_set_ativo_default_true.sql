@@ -1,0 +1,2 @@
+ALTER TABLE time
+    ALTER COLUMN ativo SET DEFAULT true;

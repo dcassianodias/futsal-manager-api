@@ -1,0 +1,1 @@
+ALTER TABLE despesa ADD COLUMN ativo boolean NOT NULL DEFAULT true;
