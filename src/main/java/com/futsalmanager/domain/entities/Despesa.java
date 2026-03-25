@@ -41,6 +41,9 @@ public class Despesa {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TipoDespesa tipoDespesa;
 
+    @Column(nullable = false)
+    private Boolean ativo;
+
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime dataCriacao;
@@ -109,6 +112,14 @@ public class Despesa {
 
     public void setTipoDespesa(TipoDespesa tipoDespesa) {
         this.tipoDespesa = tipoDespesa;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public LocalDateTime getDataCriacao() {
