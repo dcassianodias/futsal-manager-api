@@ -96,8 +96,11 @@ public class UsuarioService {
 
         validator.validarUpdate(entity, request);
 
-        entity.setNome(request.nome());
-        entity.setEmail(request.email().toLowerCase());
+        usuarioMapper.updateEntityFromRequest(request, entity);
+
+        if (request.email() != null){
+            entity.setEmail(request.email().trim().toLowerCase());
+        }
 
         if (request.senha() != null && !request.senha().isBlank()) {
             entity.setSenha(request.senha());
