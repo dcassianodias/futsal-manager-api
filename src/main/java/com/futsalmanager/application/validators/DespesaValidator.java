@@ -22,8 +22,12 @@ public class DespesaValidator {
     }
 
     public void validarUpdate(DespesaUpdateRequest  request) {
-        commonValidator.validarValorPositivo(request.valor(), "Valor da despesa");
-        commonValidator.validarTextoObrigatorio(request.descricao(), "Descrição da despesa");
+        if (request.valor() != null) {
+            commonValidator.validarValorPositivo(request.valor(), "Valor da despesa");
+        }
+        if (request.descricao() != null) {
+            commonValidator.validarTextoObrigatorio(request.descricao(), "Descrição da despesa");
+        }
     }
 
 }
