@@ -107,7 +107,7 @@ public class PagamentoService {
 
         validator.validarUpdate(entity, request);
 
-        entity.setValor(request.valor());
+        pagamentoMapper.updateEntityFromRequest(request, entity);
 
         if (entity.getTipoPagamento() == TipoPagamento.MENSALIDADE) {
             entity.setMesReferencia(request.mesReferencia());
@@ -120,6 +120,10 @@ public class PagamentoService {
 
             entity.setEvento(evento);
             entity.setMesReferencia(null);
+        }
+
+        if (entity.getStatusPagamento() != StatusPagamento.PENDENTE) {
+            throw new BusinessException("Somente pagamentos pendentes podem ser atualizados.");
         }
 
         Pagamento updated = pagamentoRepository.save(entity);
@@ -143,6 +147,10 @@ public class PagamentoService {
 
         Time time = timeRepository.findById(request.timeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + request.timeId()));
+
+        if (time.getValorMensalidade() == null){
+            throw new BusinessException("Time não possui mensalidade configurada");
+        }
 
         List<Usuario> atletas = usuarioRepository
                 .findByTimeIdAndPerfilAndAtivoTrue(request.timeId(), PerfilUsuario.ATLETA);
@@ -190,14 +198,27 @@ public class PagamentoService {
     }
 
     @Transactional
-    public void delete(UUID id) {
-        Pagamento entity = pagamentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
+    public PagamentoResponse cancelar(UUID id) {
+        Pagamento entity = pagamentoRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Pagamento não encontrado: " + id)
+        );
 
-        pagamentoRepository.delete(entity);
+        if (entity.getStatusPagamento() == StatusPagamento.PAGO){
+            throw new BusinessException("Não é possível cancelar um pagamento já pago.");
+        }
 
-        log.info("Pagamento deletado com sucesso: id={}, valor={}, tipo={}", entity.getId(), entity.getValor(),
-                entity.getTipoPagamento());
+        if (entity.getStatusPagamento() == StatusPagamento.CANCELADO){
+            throw new BusinessException("Pagamento já está cancelado.");
+        }
+
+        entity.setStatusPagamento(StatusPagamento.CANCELADO);
+
+        Pagamento updated = pagamentoRepository.save(entity);
+
+        log.info("Pagamento cancelado: id={}, valor={}, tipo={}", updated.getId(), updated.getValor(),
+                updated.getTipoPagamento());
+
+        return pagamentoMapper.toResponse(updated);
     }
 
     @Transactional(readOnly = true)
@@ -226,7 +247,7 @@ public class PagamentoService {
             throw new BusinessException("Pagamento já está marcado como pago");
         }
 
-        entity.setStatusPagamento(StatusPagamento.PAGO);
+        entity.pagar();
 
         Pagamento updated = pagamentoRepository.save(entity);
 
