@@ -8,11 +8,9 @@ import java.util.UUID;
 
 public record UsuarioUpdateRequest(
 
-        @NotBlank(message = "Nome é obrigatório")
         @Size(max = 150)
         String nome,
 
-        @NotBlank(message = "O email do usuário é obrigatório")
         @Email(message = "Email inválido")
         String email,
 
