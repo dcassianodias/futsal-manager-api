@@ -8,10 +8,8 @@ import java.math.BigDecimal;
 
 public record TimeUpdateRequest(
 
-        @NotBlank(message = "Nome do time é obrigatório")
         String nome,
 
-        @NotNull(message = "Valor da mensalidade é obrigatório")
         @DecimalMin(value = "0.01", message = "Valor deve ser maior que zero")
         BigDecimal valorMensalidade,
 
