@@ -1,0 +1,1 @@
+ALTER TABLE despesa DROP COLUMN ativo;
