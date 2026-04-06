@@ -40,7 +40,7 @@ public class Evento {
     private LocalDate dataFim;
 
     @Column(nullable = false)
-    private Boolean ativo;
+    private Boolean ativo = true;
 
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
