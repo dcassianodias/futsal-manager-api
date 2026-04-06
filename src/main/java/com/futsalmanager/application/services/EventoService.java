@@ -3,6 +3,7 @@ package com.futsalmanager.application.services;
 import com.futsalmanager.api.dto.request.EventoCreateRequest;
 import com.futsalmanager.api.dto.request.EventoUpdateRequest;
 import com.futsalmanager.api.dto.response.EventoResponse;
+import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.EventoMapper;
 import com.futsalmanager.application.validators.EventoValidator;
@@ -43,7 +44,7 @@ public class EventoService {
 
     @Transactional(readOnly = true)
     public List<EventoResponse> findAll() {
-        List<Evento> list = eventoRepository.findAll();
+        List<Evento> list = eventoRepository.findByAtivoTrue();
         return eventoMapper.toResponseList(list);
     }
 
@@ -77,11 +78,7 @@ public class EventoService {
 
         validator.validarUpdate(request);
 
-        entity.setNome(request.nome());
-        entity.setDescricao(request.descricao());
-        entity.setValorSugerido(request.valorSugerido());
-        entity.setDataInicio(request.dataInicio());
-        entity.setDataFim(request.dataFim());
+        eventoMapper.updateEntityFromRequest(request, entity);
 
         Evento updated = eventoRepository.save(entity);
 
@@ -90,12 +87,39 @@ public class EventoService {
         return eventoMapper.toResponse(updated);
     }
 
-    @Transactional
-    public void delete(UUID id) {
-        Evento entity = eventoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + id));
-        eventoRepository.delete(entity);
+    public void desativar(UUID id) {
+        Evento evento = buscarOuErro(id);
 
-        log.info("Evento deletado com sucesso: id={}, descricao={}", entity.getId(), entity.getDescricao());
+        if (!evento.getAtivo()) {
+            throw new BusinessException("Evento já está inativo");
+        }
+
+        evento.setAtivo(false);
+
+        eventoRepository.save(evento);
+
+        log.info("Evento desativado: id={}, nome={}", evento.getId(), evento.getNome());
+
     }
+
+    public void ativar(UUID id) {
+        Evento evento = buscarOuErro(id);
+
+        if (evento.getAtivo()) {
+            throw new BusinessException("Evento já está ativo");
+        }
+
+        evento.setAtivo(true);
+
+        eventoRepository.save(evento);
+
+        log.info("Evento reativado: id={}, nome={}", evento.getId(), evento.getNome());
+    }
+
+    private Evento buscarOuErro(UUID id) {
+        return eventoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + id));
+    }
+
+
 }
