@@ -38,17 +38,18 @@ public class DespesaService {
 
     @Transactional(readOnly = true)
     public DespesaResponse findById(UUID id) {
-        return despesaMapper.toResponse(buscarAtivoOuErro(id));
+        return despesaMapper.toResponse(despesaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id)));
     }
 
     @Transactional(readOnly = true)
     public List<DespesaResponse> findAll() {
-        return despesaMapper.toResponseList(despesaRepository.findByAtivoTrue());
+        return despesaMapper.toResponseList(despesaRepository.findAll());
     }
 
     @Transactional(readOnly = true)
     public List<DespesaResponse> findByTime(UUID timeId){
-        return despesaMapper.toResponseList(despesaRepository.findByTimeIdAndAtivoTrueOrderByMesReferenciaDesc(timeId));
+        return despesaMapper.toResponseList(despesaRepository.findByTimeIdOrderByMesReferenciaDesc(timeId));
     }
 
     @Transactional
@@ -60,7 +61,6 @@ public class DespesaService {
 
         Despesa despesa = despesaMapper.toEntity(request);
         despesa.setTime(time);
-        despesa.setAtivo(true);
 
         Despesa saved = despesaRepository.save(despesa);
 
@@ -71,36 +71,25 @@ public class DespesaService {
 
     @Transactional
     public DespesaResponse update(UUID id, DespesaUpdateRequest request) {
-        Despesa entity = buscarAtivoOuErro(id);
+        Despesa entity = despesaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
 
         validator.validarUpdate(request);
 
-        entity.setValor(request.valor());
-        entity.setDescricao(request.descricao());
-        entity.setMesReferencia(request.mesReferencia());
-        entity.setTipoDespesa(request.tipo());
+        despesaMapper.updateEntityFromRequest(request, entity);
 
         return despesaMapper.toResponse(despesaRepository.save(entity));
     }
 
     @Transactional
     public void delete(UUID id) {
-        Despesa entity = buscarAtivoOuErro(id);
+        Despesa entity = despesaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
 
-        entity.setAtivo(false);
-
-        despesaRepository.save(entity);
+        despesaRepository.delete(entity);
 
         log.info("Despesa deletada com sucesso: id={}, descricao={}", entity.getId(), entity.getDescricao());
     }
 
-    private Despesa buscarAtivoOuErro(UUID id) {
-        Despesa entity = despesaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
-        if (!entity.getAtivo()) {
-            throw new ResourceNotFoundException("Despesa não encontrada: " + id);
-        }
-        return entity;
-    }
 
 }
