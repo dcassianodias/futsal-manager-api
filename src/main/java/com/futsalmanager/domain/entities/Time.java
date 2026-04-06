@@ -22,11 +22,14 @@ public class Time {
     @Column(nullable = false, length = 150)
     private String nome;
 
-    @Column(name = "valor_mensalidade", nullable = false, precision = 10, scale = 2)
+    @Column(name = "valor_mensalidade", precision = 10, scale = 2)
     private BigDecimal valorMensalidade;
 
     @Column(nullable = false)
     private Boolean ativo;
+
+    @Column(unique = true)
+    private String codigo;
 
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
@@ -79,6 +82,14 @@ public class Time {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
     }
 
     public LocalDateTime getDataCriacao() {
