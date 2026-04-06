@@ -7,7 +7,6 @@ import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.JogoMapper;
 import com.futsalmanager.application.validators.JogoValidator;
-import com.futsalmanager.domain.entities.Despesa;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.enums.StatusJogo;
@@ -77,14 +76,11 @@ public class JogoService {
 
         validator.validarUpdate(id, request, entity);
 
+        jogoMapper.updateEntityFromRequest(request, entity);
+
         if (entity.getStatusJogo() != StatusJogo.AGENDADO){
             throw new BusinessException("Só é possível alterar jogos agendados");
         }
-
-        entity.setAdversario(request.adversario());
-        entity.setLocal(request.local());
-        entity.setDataHora(request.dataHora());
-        entity.setObservacoes(request.observacoes());
 
         Jogo updated = jogoRepository.save(entity);
 
