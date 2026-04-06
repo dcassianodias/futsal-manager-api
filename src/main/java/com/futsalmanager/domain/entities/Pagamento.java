@@ -1,5 +1,6 @@
 package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.domain.enums.StatusPagamento;
 import com.futsalmanager.domain.enums.TipoPagamento;
 import jakarta.persistence.*;
@@ -155,6 +156,20 @@ public class Pagamento {
 
     public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
         this.dataAtualizacao = dataAtualizacao;
+    }
+
+    public void pagar(){
+        if (this.statusPagamento != StatusPagamento.PENDENTE) {
+            throw new BusinessException("Pagamento só pode ser pago se estiver pendente");
+        }
+        this.statusPagamento = StatusPagamento.PAGO;
+    }
+
+    public void cancelar(){
+        if (this.statusPagamento != StatusPagamento.PENDENTE) {
+            throw new BusinessException("Só é possível cancelar pagamento pendente");
+        }
+        this.statusPagamento = StatusPagamento.CANCELADO;
     }
 
     @Override
