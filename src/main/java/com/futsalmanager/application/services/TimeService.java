@@ -3,11 +3,11 @@ package com.futsalmanager.application.services;
 import com.futsalmanager.api.dto.request.TimeCreateRequest;
 import com.futsalmanager.api.dto.request.TimeUpdateRequest;
 import com.futsalmanager.api.dto.response.TimeResponse;
+import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.TimeMapper;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +45,7 @@ public class TimeService {
     public TimeResponse create(TimeCreateRequest request) {
 
         Time entity = timeMapper.toEntity(request);
+        entity.setCodigo(gerarCodigo(entity.getNome()));
 
         Time saved = repository.save(entity);
 
@@ -68,7 +69,7 @@ public class TimeService {
     }
 
     @Transactional
-    public TimeResponse delete(UUID id) {
+    public void delete(UUID id) {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado" + id));
 
@@ -77,7 +78,42 @@ public class TimeService {
         repository.delete(entity);
         log.info("Time deletado: id={}, nome={}", entity.getId(), entity.getNome());
 
-        return dto;
+    }
+
+    @Transactional
+    public void desativar(UUID id) {
+        Time entity = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
+
+        if (!entity.getAtivo()) {
+            throw new BusinessException("Time já está inativo");
+        }
+
+        entity.setAtivo(false);
+
+        repository.save(entity);
+
+        log.info("Time desativado: id={}, nome={}", entity.getId(), entity.getNome());
+    }
+
+    @Transactional
+    public void ativar(UUID id) {
+        Time entity = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
+
+        if (entity.getAtivo()) {
+            throw new BusinessException("Time já está ativo");
+        }
+
+        entity.setAtivo(true);
+
+        repository.save(entity);
+
+        log.info("Time reativado: id={}, nome={}", entity.getId(), entity.getNome());
+    }
+
+    private String gerarCodigo(String nome) {
+        return nome.substring(0, 3).toUpperCase() + "-" + System.currentTimeMillis();
     }
 
 }
