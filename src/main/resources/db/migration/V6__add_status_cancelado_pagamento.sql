@@ -1,0 +1,1 @@
+ALTER TYPE status_pagamento ADD VALUE 'CANCELADO';
