@@ -10,4 +10,5 @@ public interface EventoRepository extends JpaRepository<Evento, UUID> {
 
     List<Evento> findByTimeIdOrderByDataInicioDesc(UUID timeId);
 
+    List<Evento> findByAtivoTrue();
 }
