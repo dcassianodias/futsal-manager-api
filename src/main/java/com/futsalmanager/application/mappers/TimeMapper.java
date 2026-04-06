@@ -13,20 +13,22 @@ public interface TimeMapper {
 
     //Entity -> Response
     TimeResponse toResponse(Time entity);
+
     List<TimeResponse> toResponseList(List<Time> entities);
 
     //Request -> Entity
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "ativo", constant = "true")
     Time toEntity(TimeCreateRequest request);
 
     //Atualiza a entity existente(não cria outra)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "ativo", constant = "true")
     void updateEntityFromRequest(TimeUpdateRequest request, @MappingTarget Time entity);
 
 }
