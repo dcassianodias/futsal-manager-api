@@ -10,8 +10,6 @@ import java.util.UUID;
 @Repository
 public interface DespesaRepository extends JpaRepository<Despesa, UUID> {
 
-    List<Despesa> findByAtivoTrue();
-
-    List<Despesa> findByTimeIdAndAtivoTrueOrderByMesReferenciaDesc(UUID timeId);
+    List<Despesa> findByTimeIdOrderByMesReferenciaDesc(UUID timeId);
 
 }
