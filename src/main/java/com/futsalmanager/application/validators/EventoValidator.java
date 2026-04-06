@@ -13,12 +13,16 @@ import java.time.LocalDate;
 public class EventoValidator {
 
     public void validarCreate(EventoCreateRequest request) {
-        validarDatas(request.dataInicio(), request.dataFim());
+        if (request.dataInicio() != null && request.dataFim() != null) {
+            validarDatas(request.dataInicio(), request.dataFim());
+        }
         validarValor(request.valorSugerido());
     }
 
     public void validarUpdate(EventoUpdateRequest request) {
-        validarDatas(request.dataInicio(), request.dataFim());
+        if (request.dataInicio() != null && request.dataFim() != null) {
+            validarDatas(request.dataInicio(), request.dataFim());
+        }
         validarValor(request.valorSugerido());
     }
 
