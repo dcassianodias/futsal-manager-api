@@ -6,6 +6,7 @@ import com.futsalmanager.application.validators.common.CommonValidator;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Component
 public class DespesaValidator {

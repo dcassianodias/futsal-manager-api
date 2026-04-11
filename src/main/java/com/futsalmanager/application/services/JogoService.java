@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,18 +39,19 @@ public class JogoService {
 
     @Transactional(readOnly = true)
     public JogoResponse findById(UUID id) {
-        Jogo entity = buscarOuErro(id);
-        return jogoMapper.toResponse(entity);
+        return jogoMapper.toResponse(buscarOuErro(id));
     }
 
     @Transactional(readOnly = true)
     public List<JogoResponse> findAll() {
-        return jogoMapper.toResponseList(jogoRepository.findByStatusJogoNotOrderByDataHoraDesc(StatusJogo.CANCELADO));
+        return jogoMapper.toResponseList(
+                jogoRepository.findByStatusJogoNotOrderByDataHoraDesc(StatusJogo.CANCELADO));
     }
 
     @Transactional(readOnly = true)
     public List<JogoResponse> findByTime(UUID timeId){
-        return jogoMapper.toResponseList(jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraDesc(
+        return jogoMapper.toResponseList(
+                jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraDesc(
                 timeId, StatusJogo.CANCELADO));
     }
 
@@ -74,13 +76,28 @@ public class JogoService {
     public JogoResponse update(UUID id, JogoUpdateRequest request) {
         Jogo entity = buscarOuErro(id);
 
+        String adversario = request.adversario() != null ? request.adversario() : entity.getAdversario();
+        String local = request.local() != null ? request.local() : entity.getLocal();
+        LocalDateTime dataHora = request.dataHora() != null ? request.dataHora() : entity.getDataHora();
+
         validator.validarUpdate(id, request, entity);
 
-        jogoMapper.updateEntityFromRequest(request, entity);
+        boolean duplicado = jogoRepository.existsByTimeIdAndAdversarioAndLocalAndDataHoraAndIdNotAndStatusJogoNot(
+                entity.getTime().getId(),
+                adversario,
+                local,
+                dataHora,
+                id,
+                StatusJogo.CANCELADO
+        );
 
-        if (entity.getStatusJogo() != StatusJogo.AGENDADO){
-            throw new BusinessException("Só é possível alterar jogos agendados");
+        if(duplicado){
+            throw new BusinessException(
+                    "Já existe outro jogo com mesmo adversário, local e data/hora para este time"
+            );
         }
+
+        jogoMapper.updateEntityFromRequest(request, entity);
 
         Jogo updated = jogoRepository.save(entity);
 
@@ -94,12 +111,8 @@ public class JogoService {
     public JogoResponse finalizar(UUID id) {
         Jogo entity = buscarOuErro(id);
 
-        if (entity.getStatusJogo() == StatusJogo.FINALIZADO) {
-            throw new BusinessException("Jogo já está finalizado");
-        }
-
-        if (entity.getStatusJogo() == StatusJogo.CANCELADO) {
-            throw new BusinessException("Jogo cancelado não pode ser finalizado");
+        if (entity.getStatusJogo() != StatusJogo.AGENDADO) {
+            throw new BusinessException("Somente jogos agendados podem ser finalizados");
         }
 
         entity.setStatusJogo(StatusJogo.FINALIZADO);
@@ -115,12 +128,8 @@ public class JogoService {
     public JogoResponse cancelar(UUID id) {
         Jogo entity = buscarOuErro(id);
 
-        if (entity.getStatusJogo() == StatusJogo.FINALIZADO) {
-            throw new BusinessException("Jogo finalizado não pode ser cancelado");
-        }
-
-        if (entity.getStatusJogo() == StatusJogo.CANCELADO) {
-            throw new BusinessException("Jogo já está cancelado");
+        if (entity.getStatusJogo() != StatusJogo.AGENDADO) {
+            throw new BusinessException("Somente jogos agendados podem ser cancelados");
         }
 
         entity.setStatusJogo(StatusJogo.CANCELADO);
@@ -135,6 +144,5 @@ public class JogoService {
         return jogoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Jogo não encontrado: " + id));
     }
-
 
 }

@@ -8,6 +8,7 @@ import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Component
@@ -20,11 +21,19 @@ public class JogoValidator {
     }
 
     public void validarCreate(JogoCreateRequest request) {
+        if (request.dataHora().isBefore(LocalDateTime.now().plusMinutes(1))) {
+            throw new BusinessException("Data e hora do jogo não podem ser no passado");
+        }
         validarDuplicidadeCreate(request);
     }
 
     public void validarUpdate(UUID id, JogoUpdateRequest request, Jogo entity) {
-        validarStatusFinalizado(entity);
+        validarStatusAlteracao(entity);
+
+        if (request.dataHora() != null && request.dataHora().isBefore(LocalDateTime.now().plusMinutes(1))) {
+            throw new BusinessException("Data e hora do jogo não podem ser no passado");
+        }
+
         validarDuplicidadeUpdate(id, request, entity);
     }
 
@@ -66,6 +75,12 @@ public class JogoValidator {
             throw new BusinessException(
                     "Não é permitido alterar um jogo finalizado"
             );
+        }
+    }
+
+    private void validarStatusAlteracao(Jogo jogo) {
+        if (jogo.getStatusJogo() != StatusJogo.AGENDADO){
+            throw new BusinessException("Só é possível alterar jogos agendados");
         }
     }
 }
