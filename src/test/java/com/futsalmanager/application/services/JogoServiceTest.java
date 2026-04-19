@@ -25,8 +25,12 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class JogoServiceTest {
@@ -123,18 +127,19 @@ class JogoServiceTest {
         Jogo novoJogo = mock(Jogo.class);
         Jogo saved = mock(Jogo.class);
         JogoResponse response = mock(JogoResponse.class);
-        Time time = mock(Time.class);
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
 
         when(jogoMapper.toEntity(request)).thenReturn(novoJogo);
         when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
         when(jogoRepository.save(novoJogo)).thenReturn(saved);
+        when(saved.getTime()).thenReturn(time);
         when(jogoMapper.toResponse(saved)).thenReturn(response);
 
         JogoResponse result = jogoService.create(request);
 
         assertThat(result).isEqualTo(response);
-        verify(validator).validarCreate(request);
         verify(timeRepository).findById(timeId);
+        verify(validator).validarCreate(request);
         verify(novoJogo).setTime(time);
         verify(jogoRepository).save(novoJogo);
     }
@@ -149,8 +154,8 @@ class JogoServiceTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage("Time não encontrado: " + timeId);
 
-        verify(validator).validarCreate(request);
         verify(timeRepository).findById(timeId);
+        verifyNoInteractions(validator);
         verifyNoMoreInteractions(jogoRepository);
     }
 
@@ -159,22 +164,21 @@ class JogoServiceTest {
         JogoUpdateRequest request = mock(JogoUpdateRequest.class);
         Jogo jogo = mock(Jogo.class);
         Time time = mock(Time.class);
+        JogoResponse response = mock(JogoResponse.class);
+
         when(jogo.getTime()).thenReturn(time);
         when(time.getId()).thenReturn(timeId);
-
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
-        when(jogoRepository.existsByTimeIdAndAdversarioAndLocalAndDataHoraAndIdNotAndStatusJogoNot(
-            any(), any(), any(), any(), any(), any()
-        )).thenReturn(false);
         when(jogoRepository.save(jogo)).thenReturn(jogo);
-        JogoResponse response = mock(JogoResponse.class);
         when(jogoMapper.toResponse(jogo)).thenReturn(response);
 
         JogoResponse result = jogoService.update(jogoId, request);
 
         assertThat(result).isEqualTo(response);
         verify(jogoRepository).findById(jogoId);
-        verify(validator).validarUpdate(any(), any(), any());
+        verify(validator).validarUpdate(jogoId, request, jogo);
+        verify(jogoMapper).updateEntityFromRequest(request, jogo);
+        verify(jogoRepository).save(jogo);
     }
 
     @Test
@@ -192,17 +196,19 @@ class JogoServiceTest {
     @Test
     void finalizar_DeveFinalizarJogo_QuandoJogoAgendado() {
         Jogo jogo = mock(Jogo.class);
-        when(jogo.getStatusJogo()).thenReturn(StatusJogo.AGENDADO);
         JogoResponse response = mock(JogoResponse.class);
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogoRepository.save(jogo)).thenReturn(jogo);
+        when(jogo.getTime()).thenReturn(time);
         when(jogoMapper.toResponse(jogo)).thenReturn(response);
 
         JogoResponse result = jogoService.finalizar(jogoId);
 
         assertThat(result).isEqualTo(response);
         verify(jogoRepository).findById(jogoId);
+        verify(validator).validarPodeFinalizar(jogo);
         verify(jogo).setStatusJogo(StatusJogo.FINALIZADO);
         verify(jogoRepository).save(jogo);
     }
@@ -210,32 +216,36 @@ class JogoServiceTest {
     @Test
     void finalizar_DeveLancarBusinessException_QuandoJogoNaoAgendado() {
         Jogo jogo = mock(Jogo.class);
-        when(jogo.getStatusJogo()).thenReturn(StatusJogo.FINALIZADO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
+        doThrow(new BusinessException("Só é possível finalizar jogos agendados"))
+            .when(validator).validarPodeFinalizar(jogo);
 
         assertThatThrownBy(() -> jogoService.finalizar(jogoId))
             .isInstanceOf(BusinessException.class)
-            .hasMessage("Somente jogos agendados podem ser finalizados");
+            .hasMessage("Só é possível finalizar jogos agendados");
 
         verify(jogoRepository).findById(jogoId);
+        verify(validator).validarPodeFinalizar(jogo);
         verifyNoMoreInteractions(jogoRepository);
     }
 
     @Test
     void cancelar_DeveCancelarJogo_QuandoJogoAgendado() {
         Jogo jogo = mock(Jogo.class);
-        when(jogo.getStatusJogo()).thenReturn(StatusJogo.AGENDADO);
         JogoResponse response = mock(JogoResponse.class);
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogoRepository.save(jogo)).thenReturn(jogo);
+        when(jogo.getTime()).thenReturn(time);
         when(jogoMapper.toResponse(jogo)).thenReturn(response);
 
         JogoResponse result = jogoService.cancelar(jogoId);
 
         assertThat(result).isEqualTo(response);
         verify(jogoRepository).findById(jogoId);
+        verify(validator).validarPodeCancelar(jogo);
         verify(jogo).setStatusJogo(StatusJogo.CANCELADO);
         verify(jogoRepository).save(jogo);
     }
@@ -243,15 +253,17 @@ class JogoServiceTest {
     @Test
     void cancelar_DeveLancarBusinessException_QuandoJogoNaoAgendado() {
         Jogo jogo = mock(Jogo.class);
-        when(jogo.getStatusJogo()).thenReturn(StatusJogo.FINALIZADO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
+        doThrow(new BusinessException("Só é possível cancelar jogos agendados"))
+            .when(validator).validarPodeCancelar(jogo);
 
         assertThatThrownBy(() -> jogoService.cancelar(jogoId))
             .isInstanceOf(BusinessException.class)
-            .hasMessage("Somente jogos agendados podem ser cancelados");
+            .hasMessage("Só é possível cancelar jogos agendados");
 
         verify(jogoRepository).findById(jogoId);
+        verify(validator).validarPodeCancelar(jogo);
         verifyNoMoreInteractions(jogoRepository);
     }
 }
