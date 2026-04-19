@@ -1,6 +1,8 @@
 package com.futsalmanager.application.exceptions;
 
 import com.futsalmanager.application.exceptions.response.ErrorResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.List;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     //Regra de Negócio
     @ExceptionHandler(BusinessException.class)
@@ -47,9 +50,24 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+
+        log.error("Erro de integridade no banco", ex);
+
+        ErrorResponse response = new ErrorResponse("Conflito de dados");
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
     //Erro genérico(fallback)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+
+        log.error("Erro não tratado na aplicação", ex); // 🔥 ESSENCIAL
+
         ErrorResponse response = new ErrorResponse("Erro interno do servidor");
 
         return ResponseEntity
