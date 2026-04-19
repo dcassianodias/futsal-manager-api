@@ -32,4 +32,15 @@ public interface JogoRepository extends JpaRepository<Jogo, UUID> {
             LocalDateTime dataHora,
             StatusJogo status
     );
+
+    boolean existsByTimeIdAndDataHoraAndStatusJogoNot(UUID timeId, LocalDateTime dataHora, StatusJogo statusJogo);
+
+    boolean existsByAdversarioAndDataHoraAndStatusJogoNot(String adversario, LocalDateTime dataHora,
+                                                          StatusJogo statusJogo);
+
+    boolean existsByTimeIdAndDataHoraAndIdNotAndStatusJogoNot(UUID timeId, LocalDateTime dataHora, UUID ignoreId,
+                                                              StatusJogo statusJogo);
+
+    boolean existsByAdversarioAndDataHoraAndIdNotAndStatusJogoNot(String adversario, LocalDateTime dataHora,
+                                                                  UUID ignoreId, StatusJogo statusJogo);
 }
