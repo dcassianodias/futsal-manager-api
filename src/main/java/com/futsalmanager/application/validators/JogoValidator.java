@@ -21,66 +21,114 @@ public class JogoValidator {
     }
 
     public void validarCreate(JogoCreateRequest request) {
-        if (request.dataHora().isBefore(LocalDateTime.now().plusMinutes(1))) {
-            throw new BusinessException("Data e hora do jogo não podem ser no passado");
-        }
-        validarDuplicidadeCreate(request);
+        String adversarioNormalizado = request.adversario().trim().toUpperCase();
+
+        validarDataHora(request.dataHora());
+
+        validarConflitoAgenda(
+                request.timeId(),
+                request.adversario(),
+                request.dataHora(),
+                null
+        );
     }
 
     public void validarUpdate(UUID id, JogoUpdateRequest request, Jogo entity) {
         validarStatusAlteracao(entity);
 
-        if (request.dataHora() != null && request.dataHora().isBefore(LocalDateTime.now().plusMinutes(1))) {
+        String adversarioFinal = request.adversario() != null
+                ? request.adversario().trim().toUpperCase()
+                : entity.getAdversario();
+
+        LocalDateTime dataHoraFinal = request.dataHora() != null
+                ? request.dataHora()
+                : entity.getDataHora();
+
+        validarDataHora(dataHoraFinal);
+
+        if (request.dataHora() != null || request.adversario() != null) {
+            validarConflitoAgenda(
+                    entity.getTime().getId(),
+                    adversarioFinal,
+                    dataHoraFinal,
+                    id
+            );
+        }
+    }
+
+    private void validarDataHora(LocalDateTime dataHora) {
+        if (dataHora.isBefore(LocalDateTime.now().plusMinutes(1))) {
             throw new BusinessException("Data e hora do jogo não podem ser no passado");
         }
-
-        validarDuplicidadeUpdate(id, request, entity);
     }
 
-    private void validarDuplicidadeCreate(JogoCreateRequest request) {
-        boolean existe = jogoRepository.existsByTimeIdAndAdversarioAndLocalAndDataHoraAndStatusJogoNot(
-                request.timeId(),
-                request.adversario(),
-                request.local(),
-                request.dataHora(),
-                StatusJogo.CANCELADO
-        );
+    /**
+     * REGRA CENTRAL:
+     * - Time principal não pode ter jogo no mesmo horário
+     * - Adversário não pode ter jogo no mesmo horário
+     */
+    private void validarConflitoAgenda(UUID timeId, String adversario, LocalDateTime dataHora, UUID ignoreId) {
 
-        if (existe) {
-            throw new BusinessException(
-                    "Já existe um jogo com mesmo adversário, local e data/hora para este time"
+        boolean timeOcupado;
+        boolean adversarioOcupado;
+
+        if (ignoreId == null) {
+            // CREATE
+            timeOcupado = jogoRepository.existsByTimeIdAndDataHoraAndStatusJogoNot(
+                    timeId,
+                    dataHora,
+                    StatusJogo.CANCELADO
+            );
+
+            adversarioOcupado = jogoRepository.existsByAdversarioAndDataHoraAndStatusJogoNot(
+                    adversario,
+                    dataHora,
+                    StatusJogo.CANCELADO
+            );
+
+        } else {
+            // UPDATE
+            timeOcupado = jogoRepository.existsByTimeIdAndDataHoraAndIdNotAndStatusJogoNot(
+                    timeId,
+                    dataHora,
+                    ignoreId,
+                    StatusJogo.CANCELADO
+            );
+
+            adversarioOcupado = jogoRepository.existsByAdversarioAndDataHoraAndIdNotAndStatusJogoNot(
+                    adversario,
+                    dataHora,
+                    ignoreId,
+                    StatusJogo.CANCELADO
             );
         }
-    }
 
-    private void validarDuplicidadeUpdate(UUID id, JogoUpdateRequest request, Jogo entity) {
-        boolean duplicado = jogoRepository.existsByTimeIdAndAdversarioAndLocalAndDataHoraAndIdNotAndStatusJogoNot(
-                entity.getTime().getId(),
-                request.adversario(),
-                request.local(),
-                request.dataHora(),
-                id,
-                StatusJogo.CANCELADO
-        );
-
-        if (duplicado) {
-            throw new BusinessException(
-                    "Já existe outro jogo com mesmo adversário, local e data/hora para este time"
-            );
+        if (timeOcupado) {
+            throw new BusinessException("O time já possui um jogo neste horário");
         }
-    }
 
-    private void validarStatusFinalizado(Jogo jogo) {
-        if (jogo.getStatusJogo() == StatusJogo.FINALIZADO) {
-            throw new BusinessException(
-                    "Não é permitido alterar um jogo finalizado"
-            );
+        if (adversarioOcupado) {
+            throw new BusinessException("O adversário já possui um jogo neste horário");
         }
     }
 
     private void validarStatusAlteracao(Jogo jogo) {
-        if (jogo.getStatusJogo() != StatusJogo.AGENDADO){
+        if (jogo.getStatusJogo() != StatusJogo.AGENDADO) {
             throw new BusinessException("Só é possível alterar jogos agendados");
+        }
+    }
+
+    public void validarPodeCancelar(Jogo entity) {
+        validarStatusAgendado(entity, "cancelar");
+    }
+
+    public void validarPodeFinalizar(Jogo entity) {
+        validarStatusAgendado(entity, "finalizar");
+    }
+
+    private void validarStatusAgendado(Jogo entity, String acao) {
+        if (entity.getStatusJogo() != StatusJogo.AGENDADO) {
+            throw new BusinessException("Só é possível " + acao + " jogos agendados");
         }
     }
 }
