@@ -48,6 +48,6 @@ public interface JogoMapper {
             throw new BusinessException("Adversário não pode ser vazio");
         }
 
-        return value.toUpperCase();
+        return value;
     }
 }

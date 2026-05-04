@@ -36,7 +36,7 @@ public record JogoCreateRequest(
                 description = "Data e hora do jogo",
                 example = "22/10/2026 10:00"
         )
-        @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm")
         @NotNull(message = "Data e hora do jogo são obrigatórios")
         LocalDateTime dataHora,
 
