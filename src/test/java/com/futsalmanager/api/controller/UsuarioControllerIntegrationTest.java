@@ -10,15 +10,17 @@ import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.futsalmanager.domain.entities.Time;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -29,8 +31,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @AutoConfigureMockMvc
-@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ExtendWith(DockerAvailableCondition.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
 
     @Autowired
@@ -64,6 +67,12 @@ class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
             "joao@email.com",
             "123456"
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        usuarioRepository.deleteAll();
+        timeRepository.deleteAll();
     }
 
     @Test
@@ -276,4 +285,3 @@ class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
         return objectMapper.readValue(response, UsuarioResponse.class);
     }
 }
-

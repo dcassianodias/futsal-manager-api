@@ -7,15 +7,17 @@ import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -32,8 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Se Docker não estiver disponível, estes testes serão ignorados.
  */
 @AutoConfigureMockMvc
-@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ExtendWith(DockerAvailableCondition.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
 
     @Autowired
@@ -184,5 +187,10 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
 
         String response = result.getResponse().getContentAsString();
         return objectMapper.readValue(response, TimeResponse.class);
+    }
+
+    @AfterEach
+    void tearDown() {
+        timeRepository.deleteAll();
     }
 }
