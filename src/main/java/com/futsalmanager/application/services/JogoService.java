@@ -1,5 +1,6 @@
 package com.futsalmanager.application.services;
 
+import com.futsalmanager.api.dto.request.FinalizarJogoRequest;
 import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
 import com.futsalmanager.api.dto.response.JogoResponse;
@@ -9,16 +10,22 @@ import com.futsalmanager.application.mappers.JogoMapper;
 import com.futsalmanager.application.validators.JogoValidator;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Time;
+import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.ResultadoJogo;
 import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -26,15 +33,18 @@ public class JogoService {
 
     private final JogoRepository jogoRepository;
     private final TimeRepository timeRepository;
+    private final UsuarioRepository usuarioRepository;
     private final JogoMapper jogoMapper;
     private final JogoValidator validator;
 
     public JogoService(JogoRepository jogoRepository,
                        TimeRepository timeRepository,
+                       UsuarioRepository usuarioRepository,
                        JogoMapper jogoMapper,
                        JogoValidator validator) {
         this.jogoRepository = jogoRepository;
         this.timeRepository = timeRepository;
+        this.usuarioRepository = usuarioRepository;
         this.jogoMapper = jogoMapper;
         this.validator = validator;
     }
@@ -47,14 +57,14 @@ public class JogoService {
     @Transactional(readOnly = true)
     public List<JogoResponse> findAll() {
         return jogoMapper.toResponseList(
-                jogoRepository.findByStatusJogoNotOrderByDataHoraDesc(
+                jogoRepository.findByStatusJogoNotOrderByDataHoraAsc(
                         com.futsalmanager.domain.enums.StatusJogo.CANCELADO));
     }
 
     @Transactional(readOnly = true)
     public List<JogoResponse> findByTime(UUID timeId) {
         return jogoMapper.toResponseList(
-                jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraDesc(
+                jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraAsc(
                         timeId,
                         com.futsalmanager.domain.enums.StatusJogo.CANCELADO));
     }
@@ -118,21 +128,33 @@ public class JogoService {
     }
 
     @Transactional
-    public JogoResponse finalizar(UUID id) {
+    public JogoResponse finalizar(UUID id, FinalizarJogoRequest request) {
         Jogo entity = buscarOuErro(id);
-
-        // 🔥 agora centralizado
         validator.validarPodeFinalizar(entity);
 
-        entity.setStatusJogo(com.futsalmanager.domain.enums.StatusJogo.FINALIZADO);
+        entity.setStatusJogo(StatusJogo.FINALIZADO);
+        entity.setGolsTime(request.golsTime());
+        entity.setGolsAdversario(request.golsAdversario());
+
+        if (request.golsTime() > request.golsAdversario())      entity.setResultado(ResultadoJogo.VITORIA);
+        else if (request.golsTime() < request.golsAdversario()) entity.setResultado(ResultadoJogo.DERROTA);
+        else                                                     entity.setResultado(ResultadoJogo.EMPATE);
 
         Jogo saved = jogoRepository.save(entity);
 
-        log.info("Jogo finalizado: id={}, timeId={}, adversario={}",
-                saved.getId(),
-                saved.getTime().getId(),
-                saved.getAdversario()
-        );
+        if (request.artilheiros() != null && !request.artilheiros().isEmpty()) {
+            Map<UUID, Long> golsPor = request.artilheiros().stream()
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+            golsPor.forEach((usuarioId, qtd) ->
+                    usuarioRepository.findById(usuarioId).ifPresent(u -> {
+                        u.setGols(u.getGols() + qtd.intValue());
+                        usuarioRepository.save(u);
+                    })
+            );
+        }
+
+        log.info("Jogo finalizado: id={}, placar={}-{}, resultado={}",
+                saved.getId(), saved.getGolsTime(), saved.getGolsAdversario(), saved.getResultado());
 
         return jogoMapper.toResponse(saved);
     }

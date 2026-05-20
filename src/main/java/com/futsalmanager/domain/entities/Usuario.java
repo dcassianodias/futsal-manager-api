@@ -42,6 +42,9 @@ public class Usuario {
     @Column(nullable = false)
     private Boolean ativo;
 
+    @Column(nullable = false)
+    private Integer gols = 0;
+
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime dataCriacao;
@@ -101,13 +104,11 @@ public class Usuario {
         this.perfil = perfil;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
-    }
+    public Boolean getAtivo() { return ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
+    public Integer getGols() { return gols; }
+    public void setGols(Integer gols) { this.gols = gols; }
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;

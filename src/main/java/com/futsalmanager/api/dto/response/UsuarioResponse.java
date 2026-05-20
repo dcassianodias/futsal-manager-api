@@ -12,9 +12,8 @@ public record UsuarioResponse(
         UUID timeId,
         PerfilUsuario perfil,
         Boolean ativo,
+        Integer gols,
         LocalDateTime dataCriacao,
         LocalDateTime dataAtualizacao
-
-
 ) {
 }

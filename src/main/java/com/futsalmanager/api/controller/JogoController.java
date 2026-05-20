@@ -1,5 +1,6 @@
 package com.futsalmanager.api.controller;
 
+import com.futsalmanager.api.dto.request.FinalizarJogoRequest;
 import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
 import com.futsalmanager.api.dto.response.JogoResponse;
@@ -99,14 +100,15 @@ public class JogoController {
     }
 
     @PatchMapping("/{id}/finalizar")
-    @Operation(summary = "Finalizar jogo")
+    @Operation(summary = "Finalizar jogo com placar e artilheiros")
     @ApiResponse(
             responseCode = "200",
             description = "Jogo finalizado",
             content = @Content(schema = @Schema(implementation = JogoResponse.class))
     )
-    public ResponseEntity<JogoResponse> finalizar(@PathVariable UUID id){
-        return ResponseEntity.ok(service.finalizar(id));
+    public ResponseEntity<JogoResponse> finalizar(@PathVariable UUID id,
+                                                  @RequestBody @Valid FinalizarJogoRequest request) {
+        return ResponseEntity.ok(service.finalizar(id, request));
     }
 
     @PatchMapping("/{id}/cancelar")

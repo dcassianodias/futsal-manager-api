@@ -14,7 +14,6 @@ public interface JogoMapper {
 
     //Entity -> Response
     @Mapping(target = "timeId", source = "time.id")
-    @Mapping(target = "status", source = "statusJogo")
     JogoResponse toResponse(Jogo entity);
 
     List<JogoResponse> toResponseList(List<Jogo> entities);

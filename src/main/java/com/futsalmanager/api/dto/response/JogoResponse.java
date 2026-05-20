@@ -1,5 +1,6 @@
 package com.futsalmanager.api.dto.response;
 
+import com.futsalmanager.domain.enums.ResultadoJogo;
 import com.futsalmanager.domain.enums.StatusJogo;
 
 import java.time.LocalDateTime;
@@ -11,9 +12,12 @@ public record JogoResponse(
         String adversario,
         String local,
         LocalDateTime dataHora,
-        StatusJogo status,
+        StatusJogo statusJogo,
+        Integer golsTime,
+        Integer golsAdversario,
+        ResultadoJogo resultado,
         String observacoes,
         LocalDateTime dataCriacao,
-        LocalDateTime dataAtualização
+        LocalDateTime dataAtualizacao
 ) {
 }

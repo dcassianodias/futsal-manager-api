@@ -1,5 +1,6 @@
 package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.domain.enums.ResultadoJogo;
 import com.futsalmanager.domain.enums.StatusJogo;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -38,6 +39,17 @@ public class Jogo {
     @Column(name = "status", nullable = false)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private StatusJogo statusJogo;
+
+    @Column(name = "gols_time")
+    private Integer golsTime;
+
+    @Column(name = "gols_adversario")
+    private Integer golsAdversario;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "resultado")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private ResultadoJogo resultado;
 
     @Column(columnDefinition = "text")
     private String observacoes;
@@ -114,13 +126,17 @@ public class Jogo {
         this.statusJogo = statusJogo;
     }
 
-    public String getObservacoes() {
-        return observacoes;
-    }
+    public Integer getGolsTime() { return golsTime; }
+    public void setGolsTime(Integer golsTime) { this.golsTime = golsTime; }
 
-    public void setObservacoes(String observacoes) {
-        this.observacoes = observacoes;
-    }
+    public Integer getGolsAdversario() { return golsAdversario; }
+    public void setGolsAdversario(Integer golsAdversario) { this.golsAdversario = golsAdversario; }
+
+    public ResultadoJogo getResultado() { return resultado; }
+    public void setResultado(ResultadoJogo resultado) { this.resultado = resultado; }
+
+    public String getObservacoes() { return observacoes; }
+    public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;

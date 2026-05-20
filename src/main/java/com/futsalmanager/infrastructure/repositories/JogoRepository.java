@@ -21,9 +21,9 @@ public interface JogoRepository extends JpaRepository<Jogo, UUID> {
             StatusJogo status
     );
 
-    List<Jogo> findByTimeIdAndStatusJogoNotOrderByDataHoraDesc(UUID timeId, StatusJogo status);
+    List<Jogo> findByTimeIdAndStatusJogoNotOrderByDataHoraAsc(UUID timeId, StatusJogo status);
 
-    List<Jogo> findByStatusJogoNotOrderByDataHoraDesc(StatusJogo status);
+    List<Jogo> findByStatusJogoNotOrderByDataHoraAsc(StatusJogo status);
 
     boolean existsByTimeIdAndAdversarioAndLocalAndDataHoraAndStatusJogoNot(
             UUID timeId,
