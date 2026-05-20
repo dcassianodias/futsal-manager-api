@@ -78,7 +78,7 @@ public class PagamentoService {
 
         Evento evento = null;
 
-        if (request.tipo() == TipoPagamento.EVENTO) {
+        if (request.tipoPagamento() == TipoPagamento.EVENTO) {
             evento = eventoRepository.findById(request.eventoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + request.eventoId()));
         }

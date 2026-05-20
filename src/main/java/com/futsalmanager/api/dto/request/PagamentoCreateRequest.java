@@ -1,6 +1,5 @@
 package com.futsalmanager.api.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.futsalmanager.domain.enums.TipoPagamento;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
@@ -39,7 +38,6 @@ public record PagamentoCreateRequest(
                 example = "01/04/2026",
                 nullable = true
         )
-        @JsonFormat(pattern = "dd/MM/yyyy")
         LocalDate mesReferencia,
 
         @Schema(
@@ -56,6 +54,6 @@ public record PagamentoCreateRequest(
                 allowableValues = {"MENSALIDADE", "EVENTO"}
         )
         @NotNull(message = "Tipo de pagamento é obrigatório")
-        TipoPagamento tipo
+        TipoPagamento tipoPagamento
 
 ) {}

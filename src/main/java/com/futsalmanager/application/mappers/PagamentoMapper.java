@@ -15,8 +15,6 @@ public interface PagamentoMapper {
     @Mapping(target = "timeId", source = "time.id")
     @Mapping(target = "usuarioId", source = "usuario.id")
     @Mapping(target = "eventoId", expression = "java(entity.getEvento() != null ? entity.getEvento().getId() : null)")
-    @Mapping(target = "tipo", source = "tipoPagamento")
-    @Mapping(target = "status", source = "statusPagamento")
     PagamentoResponse toResponse(Pagamento entity);
 
     List<PagamentoResponse> toResponseList(List<Pagamento> list);
@@ -26,7 +24,7 @@ public interface PagamentoMapper {
     @Mapping(target = "time", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "evento", ignore = true)
-    @Mapping(target = "tipoPagamento", source = "tipo")
+    @Mapping(target = "tipoPagamento", source = "tipoPagamento")
     @Mapping(target = "statusPagamento", expression = "java(com.futsalmanager.domain.enums.StatusPagamento.PENDENTE)")
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)

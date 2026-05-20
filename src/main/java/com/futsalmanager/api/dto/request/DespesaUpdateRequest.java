@@ -20,7 +20,7 @@ public record DespesaUpdateRequest(
 
         LocalDate mesReferencia,
 
-        TipoDespesa tipo
+        TipoDespesa tipoDespesa
 
 ) {
 }

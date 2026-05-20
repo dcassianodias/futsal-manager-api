@@ -15,8 +15,8 @@ public record PagamentoResponse(
         UUID eventoId,
         LocalDate mesReferencia,
         BigDecimal valor,
-        TipoPagamento tipo,
-        StatusPagamento status,
+        TipoPagamento tipoPagamento,
+        StatusPagamento statusPagamento,
         LocalDateTime dataCriacao,
         LocalDateTime dataAtualizacao
 ) {

@@ -1,6 +1,5 @@
 package com.futsalmanager.api.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.futsalmanager.domain.enums.TipoDespesa;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
@@ -35,7 +34,6 @@ public record DespesaCreateRequest(
                 format = "date"
         )
         @NotNull(message = "Mês de referência é obrigatório")
-        @JsonFormat(pattern = "dd/MM/yyyy")
         LocalDate mesReferencia,
 
         @Schema(
@@ -43,6 +41,6 @@ public record DespesaCreateRequest(
                 example = "ALUGUEL_QUADRA"
         )
         @NotNull(message = "Tipo da despesa é obrigatório")
-        TipoDespesa tipo
+        TipoDespesa tipoDespesa
 ) {
 }

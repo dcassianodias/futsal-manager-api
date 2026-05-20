@@ -13,7 +13,7 @@ public record DespesaResponse(
         String descricao,
         BigDecimal valor,
         LocalDate mesReferencia,
-        TipoDespesa tipo,
+        TipoDespesa tipoDespesa,
         LocalDateTime dataCriacao,
         LocalDateTime dataAtualizacao
 ) {

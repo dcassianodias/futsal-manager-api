@@ -21,12 +21,12 @@ public class PagamentoValidator {
         }
 
         validarRegrasPorTipo(
-                request.tipo(),
+                request.tipoPagamento(),
                 request.mesReferencia(),
                 request.eventoId()
         );
 
-        if (request.tipo() == TipoPagamento.EVENTO) {
+        if (request.tipoPagamento() == TipoPagamento.EVENTO) {
 
             if (evento == null) {
                 throw new BusinessException("Evento deve ser informado.");
