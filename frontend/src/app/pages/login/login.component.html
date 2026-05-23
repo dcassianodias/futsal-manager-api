@@ -1,0 +1,128 @@
+<div class="login-page">
+
+  <div class="login-left">
+    <a routerLink="/" class="login-home-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Página inicial
+    </a>
+    <div class="login-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+          <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+        </svg>
+      </div>
+      <h1 class="brand-title">Futsal Manager</h1>
+      <p class="brand-sub">Gerencie seu time de futsal com facilidade</p>
+
+      <ul class="brand-features">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Agendamento de jogos
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Gestão financeira completa
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Controle de atletas
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Disponível como aplicativo (PWA)
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-card">
+
+      <div class="login-card-header">
+        <h2>Acessar meu time</h2>
+        <p>Selecione o time para continuar</p>
+      </div>
+
+      @if (loading) {
+        <div class="login-loading">
+          <div class="spinner"></div>
+          <span>Carregando times...</span>
+        </div>
+      }
+
+      @if (erro) {
+        <div class="login-erro">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ erro }}</span>
+        </div>
+      }
+
+      @if (!loading && !erro) {
+        @if (times.length === 0) {
+          <div class="login-vazio">
+            <p>Nenhum time cadastrado ainda.</p>
+          </div>
+        } @else {
+          <div class="times-selector">
+            @for (time of times; track time.id) {
+              <button
+                class="time-option"
+                [class.selected]="selectedId === time.id"
+                (click)="selecionar(time.id)">
+                <div class="time-opt-avatar" [style.background]="corAvatar(time.nome)">
+                  {{ iniciais(time.nome) }}
+                </div>
+                <div class="time-opt-info">
+                  <span class="time-opt-nome">{{ time.nome }}</span>
+                  @if (time.codigo) {
+                    <span class="time-opt-cod">{{ time.codigo }}</span>
+                  }
+                </div>
+                @if (selectedId === time.id) {
+                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                }
+              </button>
+            }
+          </div>
+
+          <button
+            class="btn-entrar"
+            [disabled]="!selectedId"
+            (click)="entrar()">
+            <span>Entrar</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        }
+      }
+
+      <div class="login-divider">
+        <span>em breve</span>
+      </div>
+
+      <div class="login-future">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <div>
+          <span class="future-title">Login com e-mail e senha</span>
+          <span class="future-sub">Autenticação segura por time — em desenvolvimento</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

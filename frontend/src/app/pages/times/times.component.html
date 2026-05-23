@@ -1,0 +1,87 @@
+<div class="public-page">
+
+  <header class="pub-header">
+    <div class="pub-header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+            <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">Futsal Manager</span>
+          <span class="brand-tagline">Plataforma de gestão</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1 class="hero-title">Times cadastrados</h1>
+    <p class="hero-sub">Selecione seu time para acompanhar jogos e eventos</p>
+  </section>
+
+  <main class="pub-main">
+
+    @if (loading) {
+      <div class="pub-loading">
+        <div class="spinner"></div>
+        <span>Carregando times...</span>
+      </div>
+    }
+
+    @if (erro) {
+      <div class="pub-erro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p>{{ erro }}</p>
+      </div>
+    }
+
+    @if (!loading && !erro && times.length === 0) {
+      <div class="pub-vazio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+          <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+        </svg>
+        <h3>Nenhum time cadastrado</h3>
+        <p>Os times aparecerão aqui assim que forem registrados na plataforma.</p>
+      </div>
+    }
+
+    @if (!loading && times.length > 0) {
+      <div class="times-grid">
+        @for (time of times; track time.id) {
+          <a class="time-card" [routerLink]="['/time', time.id]">
+            <div class="time-avatar" [style.background]="corAvatar(time.nome)">
+              {{ iniciais(time.nome) }}
+            </div>
+            <div class="time-info">
+              <h3 class="time-nome">{{ time.nome }}</h3>
+              <span class="time-codigo">{{ time.codigo }}</span>
+            </div>
+            <div class="time-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          </a>
+        }
+      </div>
+    }
+
+  </main>
+
+  <footer class="pub-footer">
+    <span>Futsal Manager &copy; {{ ano }}</span>
+  </footer>
+
+</div>

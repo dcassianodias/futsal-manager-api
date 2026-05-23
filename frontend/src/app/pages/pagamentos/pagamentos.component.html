@@ -1,0 +1,195 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Pagamentos</h1>
+      <p class="page-subtitle">Controle financeiro dos membros</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline" (click)="abrirGerarPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Gerar Mensalidades
+      </button>
+      <button class="btn btn-primary" (click)="abrirPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Novo Pagamento
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  @if (!loading && todosPagamentos.length > 0) {
+    <div class="resumo-bar card">
+      <div class="resumo-item">
+        <span class="resumo-label">Pendentes</span>
+        <span class="resumo-value amber">{{ countByStatus('PENDENTE') }}</span>
+      </div>
+      <div class="resumo-sep"></div>
+      <div class="resumo-item">
+        <span class="resumo-label">Total pendente</span>
+        <span class="resumo-value amber">{{ fmt(totalPendente) }}</span>
+      </div>
+      <div class="resumo-sep"></div>
+      <div class="resumo-item">
+        <span class="resumo-label">Pagos</span>
+        <span class="resumo-value green">{{ countByStatus('PAGO') }}</span>
+      </div>
+    </div>
+  }
+
+  <div class="filter-tabs">
+    <button class="filter-tab" [class.active]="filtro === 'TODOS'" (click)="filtro = 'TODOS'">
+      Todos ({{ todosPagamentos.length }})
+    </button>
+    <button class="filter-tab" [class.active]="filtro === 'PENDENTE'" (click)="filtro = 'PENDENTE'">
+      Pendentes ({{ countByStatus('PENDENTE') }})
+    </button>
+    <button class="filter-tab" [class.active]="filtro === 'PAGO'" (click)="filtro = 'PAGO'">
+      Pagos ({{ countByStatus('PAGO') }})
+    </button>
+    <button class="filter-tab" [class.active]="filtro === 'CANCELADO'" (click)="filtro = 'CANCELADO'">
+      Cancelados ({{ countByStatus('CANCELADO') }})
+    </button>
+  </div>
+
+  @if (sucesso) {
+    <div class="alert alert-success">{{ sucesso }}</div>
+  }
+  @if (erro && !showPanel && !showGerarPanel) {
+    <div class="alert alert-error">{{ erro }}</div>
+  }
+
+  <div class="card">
+    @if (loading) {
+      <div class="loading-state">Carregando pagamentos...</div>
+    } @else if (filtrados.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+        <h3>Nenhum pagamento encontrado</h3>
+        <p>{{ filtro !== 'TODOS' ? 'Tente outro filtro' : 'Gere as mensalidades ou crie um pagamento manual' }}</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Jogador</th>
+              <th>Tipo</th>
+              <th>Referência</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of filtrados; track p.id) {
+              <tr>
+                <td class="font-semibold">{{ getNome(p.usuarioId) }}</td>
+                <td>
+                  <span class="badge badge-gray">{{ tipoLabel(p.tipoPagamento) }}</span>
+                </td>
+                <td class="text-muted">{{ formatMes(p.mesReferencia) }}</td>
+                <td class="font-semibold">{{ fmt(p.valor) }}</td>
+                <td><span [class]="statusClass(p.statusPagamento)">{{ statusLabel(p.statusPagamento) }}</span></td>
+                <td class="text-right nowrap">
+                  @if (p.statusPagamento === 'PENDENTE') {
+                    <button class="btn btn-primary btn-sm" (click)="pagar(p.id)" style="margin-right:.375rem">
+                      Pagar
+                    </button>
+                    <button class="btn btn-ghost btn-sm" (click)="cancelarPagamento(p.id)" style="color:var(--danger)">
+                      Cancelar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Painel: Novo Pagamento -->
+@if (showPanel) {
+  <div class="overlay" (click)="fecharPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Novo Pagamento</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) { <div class="alert alert-error">{{ erro }}</div> }
+      <div class="form-group">
+        <label>Jogador *</label>
+        <select [(ngModel)]="form.usuarioId">
+          <option value="">Selecione um jogador</option>
+          @for (u of usuarios; track u.id) {
+            @if (u.ativo) {
+              <option [value]="u.id">{{ u.nome }}</option>
+            }
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select [(ngModel)]="form.tipoPagamento">
+          <option value="MENSALIDADE">Mensalidade</option>
+          <option value="EVENTO">Evento</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor (R$) *</label>
+        <input type="number" [(ngModel)]="form.valor" placeholder="0,00" min="0" step="0.01" />
+      </div>
+      @if (form.tipoPagamento === 'MENSALIDADE') {
+        <div class="form-group">
+          <label>Mês de referência</label>
+          <input type="month" [(ngModel)]="formMesInput" />
+        </div>
+      }
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="salvar()" [disabled]="salvando">
+        {{ salvando ? 'Salvando...' : 'Salvar Pagamento' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharPanel()">Cancelar</button>
+    </div>
+  </div>
+}
+
+<!-- Painel: Gerar Mensalidades -->
+@if (showGerarPanel) {
+  <div class="overlay" (click)="fecharGerarPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Gerar Mensalidades</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharGerarPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) { <div class="alert alert-error">{{ erro }}</div> }
+      <div class="alert alert-info">
+        Serão geradas mensalidades para todos os jogadores ativos do time com base no valor de mensalidade configurado.
+      </div>
+      <div class="form-group">
+        <label>Mês de referência *</label>
+        <input type="month" [(ngModel)]="mesInput" />
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="gerarMensalidades()" [disabled]="salvando">
+        {{ salvando ? 'Gerando...' : 'Gerar Mensalidades' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharGerarPanel()">Cancelar</button>
+    </div>
+  </div>
+}

@@ -1,0 +1,127 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Jogadores</h1>
+      <p class="page-subtitle">Gerencie os membros do seu time</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" (click)="abrirPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Novo Jogador
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab" [class.active]="filtroAtivos" (click)="filtroAtivos = true">
+      Ativos ({{ totalAtivos }})
+    </button>
+    <button class="filter-tab" [class.active]="!filtroAtivos" (click)="filtroAtivos = false">
+      Inativos ({{ totalInativos }})
+    </button>
+  </div>
+
+  @if (sucesso) {
+    <div class="alert alert-success">{{ sucesso }}</div>
+  }
+  @if (erro && !showPanel) {
+    <div class="alert alert-error">{{ erro }}</div>
+  }
+
+  <div class="card">
+    @if (loading) {
+      <div class="loading-state">Carregando jogadores...</div>
+    } @else if (listaFiltrada.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        <h3>{{ filtroAtivos ? 'Nenhum jogador ativo' : 'Nenhum jogador inativo' }}</h3>
+        <p>{{ filtroAtivos ? 'Clique em "Novo Jogador" para adicionar' : 'Todos os jogadores estão ativos' }}</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Perfil</th>
+              <th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of listaFiltrada; track u.id) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar">{{ u.nome.charAt(0).toUpperCase() }}</div>
+                    <span class="font-semibold">{{ u.nome }}</span>
+                  </div>
+                </td>
+                <td class="text-muted">{{ u.email }}</td>
+                <td><span [class]="perfilClass(u.perfil)">{{ perfilLabel(u.perfil) }}</span></td>
+                <td class="text-right">
+                  @if (u.ativo) {
+                    <button class="btn btn-ghost btn-sm" (click)="desativar(u.id)" style="color:var(--danger)">
+                      Desativar
+                    </button>
+                  } @else {
+                    <button class="btn btn-outline btn-sm" (click)="reativar(u.id)">
+                      Reativar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+@if (showPanel) {
+  <div class="overlay" (click)="fecharPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Novo Jogador</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) {
+        <div class="alert alert-error">{{ erro }}</div>
+      }
+      <div class="form-group">
+        <label>Nome completo *</label>
+        <input type="text" [(ngModel)]="form.nome" placeholder="Nome do jogador" autofocus />
+      </div>
+      <div class="form-group">
+        <label>E-mail *</label>
+        <input type="email" [(ngModel)]="form.email" placeholder="email@exemplo.com" />
+      </div>
+      <div class="form-group">
+        <label>Senha provisória *</label>
+        <input type="password" [(ngModel)]="form.senha" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="form-group">
+        <label>Perfil</label>
+        <select [(ngModel)]="form.perfil">
+          <option value="ATLETA">Atleta</option>
+          <option value="ADMIN">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="salvar()" [disabled]="salvando">
+        {{ salvando ? 'Salvando...' : 'Adicionar Jogador' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharPanel()">Cancelar</button>
+    </div>
+  </div>
+}

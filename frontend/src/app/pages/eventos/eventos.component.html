@@ -1,0 +1,135 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Eventos</h1>
+      <p class="page-subtitle">Festivais, confraternizações e atividades do time</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" (click)="abrirPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Novo Evento
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab" [class.active]="filtroAtivos" (click)="filtroAtivos = true">
+      Ativos ({{ totalAtivos }})
+    </button>
+    <button class="filter-tab" [class.active]="!filtroAtivos" (click)="filtroAtivos = false">
+      Encerrados ({{ totalInativos }})
+    </button>
+  </div>
+
+  @if (sucesso) { <div class="alert alert-success">{{ sucesso }}</div> }
+  @if (erro && !showPanel) { <div class="alert alert-error">{{ erro }}</div> }
+
+  @if (loading) {
+    <div class="loading-state">Carregando eventos...</div>
+  } @else if (listaFiltrada.length === 0) {
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <h3>Nenhum evento {{ filtroAtivos ? 'ativo' : 'encerrado' }}</h3>
+      <p>{{ filtroAtivos ? 'Clique em "Novo Evento" para criar' : 'Todos os eventos estão ativos' }}</p>
+    </div>
+  } @else {
+    <div class="eventos-grid">
+      @for (e of listaFiltrada; track e.id) {
+        <div class="card evento-card">
+          <div class="evento-header">
+            <div class="evento-title-row">
+              <span class="evento-nome">{{ e.nome }}</span>
+              <span class="badge" [class]="e.ativo ? 'badge-green' : 'badge-gray'">
+                {{ e.ativo ? 'Ativo' : 'Encerrado' }}
+              </span>
+            </div>
+            @if (e.descricao) {
+              <p class="evento-desc">{{ e.descricao }}</p>
+            }
+          </div>
+          <div class="evento-body">
+            <div class="evento-info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>{{ formatData(e.dataInicio) }} → {{ formatData(e.dataFim) }}</span>
+            </div>
+            @if (e.valorSugerido) {
+              <div class="evento-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <span>Valor sugerido: {{ fmt(e.valorSugerido) }}</span>
+              </div>
+            }
+          </div>
+          <div class="evento-footer">
+            @if (e.ativo) {
+              <button class="btn btn-ghost btn-sm" (click)="desativar(e.id)" style="color:var(--danger)">
+                Encerrar evento
+              </button>
+            } @else {
+              <button class="btn btn-outline btn-sm" (click)="ativar(e.id)">
+                Reativar
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (showPanel) {
+  <div class="overlay" (click)="fecharPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Novo Evento</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) { <div class="alert alert-error">{{ erro }}</div> }
+      <div class="form-group">
+        <label>Nome do evento *</label>
+        <input type="text" [(ngModel)]="form.nome" placeholder="Ex: Jantar de Confraternização" autofocus />
+      </div>
+      <div class="form-group">
+        <label>Descrição</label>
+        <textarea [(ngModel)]="form.descricao" placeholder="Detalhes sobre o evento..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data de início *</label>
+          <input type="date" [(ngModel)]="form.dataInicio" />
+        </div>
+        <div class="form-group">
+          <label>Data de fim *</label>
+          <input type="date" [(ngModel)]="form.dataFim" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Valor sugerido (R$)</label>
+        <input type="number" [(ngModel)]="form.valorSugerido" placeholder="0,00" min="0" step="0.01" />
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="salvar()" [disabled]="salvando">
+        {{ salvando ? 'Salvando...' : 'Criar Evento' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharPanel()">Cancelar</button>
+    </div>
+  </div>
+}

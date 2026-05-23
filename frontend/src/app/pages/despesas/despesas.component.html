@@ -1,0 +1,119 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Despesas</h1>
+      <p class="page-subtitle">Registre e acompanhe os gastos do time</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" (click)="abrirPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nova Despesa
+      </button>
+    </div>
+  </div>
+
+  @if (!loading && despesas.length > 0) {
+    <div class="totais-bar">
+      <div class="card total-card">
+        <span class="total-label">Mês atual</span>
+        <span class="total-value">{{ fmt(totalMesAtual) }}</span>
+      </div>
+      <div class="card total-card">
+        <span class="total-label">Total geral</span>
+        <span class="total-value">{{ fmt(totalGeral) }}</span>
+      </div>
+    </div>
+  }
+
+  @if (sucesso) { <div class="alert alert-success">{{ sucesso }}</div> }
+  @if (erro && !showPanel) { <div class="alert alert-error">{{ erro }}</div> }
+
+  <div class="card">
+    @if (loading) {
+      <div class="loading-state">Carregando despesas...</div>
+    } @else if (despesas.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        <h3>Nenhuma despesa registrada</h3>
+        <p>Clique em "Nova Despesa" para registrar um gasto do time</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Tipo</th>
+              <th>Mês</th>
+              <th class="text-right">Valor</th>
+              <th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of despesas; track d.id) {
+              <tr>
+                <td class="font-semibold">{{ d.descricao }}</td>
+                <td><span [class]="tipoClass(d.tipoDespesa)">{{ tipoLabel(d.tipoDespesa) }}</span></td>
+                <td class="text-muted">{{ formatMes(d.mesReferencia) }}</td>
+                <td class="text-right font-semibold" style="color:var(--danger)">{{ fmt(d.valor) }}</td>
+                <td class="text-right">
+                  <button class="btn btn-ghost btn-sm" (click)="excluir(d.id)" style="color:var(--danger)">
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+@if (showPanel) {
+  <div class="overlay" (click)="fecharPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Nova Despesa</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) { <div class="alert alert-error">{{ erro }}</div> }
+      <div class="form-group">
+        <label>Descrição *</label>
+        <input type="text" [(ngModel)]="form.descricao" placeholder="Ex: Aluguel da quadra — junho" autofocus />
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select [(ngModel)]="form.tipoDespesa">
+          @for (t of tiposDespesa; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor (R$) *</label>
+          <input type="number" [(ngModel)]="form.valor" placeholder="0,00" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Mês de referência *</label>
+          <input type="month" [(ngModel)]="mesInput" />
+        </div>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="salvar()" [disabled]="salvando">
+        {{ salvando ? 'Salvando...' : 'Registrar Despesa' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharPanel()">Cancelar</button>
+    </div>
+  </div>
+}

@@ -1,0 +1,281 @@
+<div class="tp-page">
+
+  <!-- TOPBAR -->
+  <header class="tp-topbar">
+    <a routerLink="/" class="tp-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      <span>Início</span>
+    </a>
+    @if (time) {
+      <span class="tp-topbar-nome">{{ time.nome }}</span>
+    }
+  </header>
+
+  <!-- LOADING -->
+  @if (loading) {
+    <div class="tp-loading">
+      <div class="spinner"></div>
+      <span>Carregando dados do time...</span>
+    </div>
+  }
+
+  <!-- ERRO -->
+  @if (erro) {
+    <div class="tp-erro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <h3>{{ erro }}</h3>
+      <a routerLink="/login" class="btn-voltar">Voltar ao início</a>
+    </div>
+  }
+
+  @if (!loading && time) {
+
+    <!-- HERO -->
+    <section class="tp-hero">
+      <div class="tp-hero-inner">
+        <div class="tp-avatar" [style.background]="corAvatar(time.nome)">{{ iniciais(time.nome) }}</div>
+        <div class="tp-hero-info">
+          <h1 class="tp-nome">{{ time.nome }}</h1>
+          <div class="tp-meta">
+            @if (time.codigo) { <span class="tp-codigo">{{ time.codigo }}</span> }
+            @if (time.valorMensalidade) {
+              <span class="tp-mensalidade">Mensalidade: {{ fmt(time.valorMensalidade) }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARDS DE ESTATÍSTICAS -->
+    <div class="tp-stats-bar">
+      <div class="tp-stat" (click)="tab='jogos'; filtroJogo='AGENDADO'">
+        <span class="tp-stat-valor stat-blue">{{ statsJogos.agendados }}</span>
+        <span class="tp-stat-label">Agendados</span>
+      </div>
+      <div class="tp-stat" (click)="tab='jogos'; filtroJogo='FINALIZADO'">
+        <span class="tp-stat-valor stat-green">{{ statsJogos.finalizados }}</span>
+        <span class="tp-stat-label">Finalizados</span>
+      </div>
+      <div class="tp-stat" (click)="tab='eventos'">
+        <span class="tp-stat-valor stat-amber">{{ eventosAtivos.length }}</span>
+        <span class="tp-stat-label">Eventos</span>
+      </div>
+      <div class="tp-stat" (click)="tab='despesas'">
+        <span class="tp-stat-valor stat-red">{{ fmt(despesasMes) }}</span>
+        <span class="tp-stat-label">Despesas/mês</span>
+      </div>
+    </div>
+
+    <!-- PRÓXIMO JOGO DESTAQUE -->
+    @if (proximoJogo) {
+      <div class="tp-proximo-wrapper">
+        <div class="tp-proximo">
+          <div class="tp-proximo-label">Próximo jogo</div>
+          <div class="tp-proximo-vs">vs {{ proximoJogo.adversario }}</div>
+          <div class="tp-proximo-detalhes">
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {{ formatData(proximoJogo.dataHora) }}
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ proximoJogo.local }}
+            </span>
+          </div>
+          <span class="tp-proximo-prazo">{{ diasAte(proximoJogo.dataHora) }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- ABAS -->
+    <div class="tp-tabs-wrapper">
+      <div class="tp-tabs">
+        <button class="tp-tab" [class.active]="tab === 'jogos'" (click)="tab = 'jogos'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+            <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+          Jogos
+          @if (jogos.length) { <span class="tp-tab-count">{{ jogos.length }}</span> }
+        </button>
+        <button class="tp-tab" [class.active]="tab === 'despesas'" (click)="tab = 'despesas'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          Despesas
+          @if (despesas.length) { <span class="tp-tab-count">{{ despesas.length }}</span> }
+        </button>
+        <button class="tp-tab" [class.active]="tab === 'eventos'" (click)="tab = 'eventos'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Eventos
+          @if (eventos.length) { <span class="tp-tab-count">{{ eventos.length }}</span> }
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO DAS ABAS -->
+    <div class="tp-tab-content">
+
+      <!-- ABA JOGOS -->
+      @if (tab === 'jogos') {
+        <div class="tp-section">
+          <div class="tp-filtros">
+            @for (f of ['TODOS','AGENDADO','FINALIZADO','CANCELADO']; track f) {
+              <button
+                class="filtro-pill"
+                [class.active]="filtroJogo === f"
+                (click)="filtroJogo = $any(f)">
+                {{ f === 'TODOS' ? 'Todos' : f === 'AGENDADO' ? 'Agendados' : f === 'FINALIZADO' ? 'Finalizados' : 'Cancelados' }}
+              </button>
+            }
+          </div>
+
+          @if (jogosFiltrados.length === 0) {
+            <div class="tp-vazio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+              </svg>
+              <p>Nenhum jogo encontrado.</p>
+            </div>
+          } @else {
+            <div class="jogos-lista">
+              @for (jogo of jogosFiltrados; track jogo.id) {
+                <div class="jogo-card" [class.cancelado]="jogo.statusJogo === 'CANCELADO'">
+                  <div class="jogo-data">
+                    <span class="jogo-dia">{{ formatDataCurta(jogo.dataHora) }}</span>
+                    <span class="jogo-hora">{{ formatHora(jogo.dataHora) }}</span>
+                    @if (jogo.statusJogo === 'AGENDADO') {
+                      <span class="jogo-countdown">{{ diasAte(jogo.dataHora) }}</span>
+                    }
+                  </div>
+                  <div class="jogo-info">
+                    <span class="jogo-vs">vs <strong>{{ jogo.adversario }}</strong></span>
+                    <span class="jogo-local">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      {{ jogo.local }}
+                    </span>
+                    @if (jogo.observacoes) {
+                      <span class="jogo-obs">{{ jogo.observacoes }}</span>
+                    }
+                  </div>
+                  <div class="jogo-status">
+                    @if (jogo.statusJogo === 'AGENDADO') { <span class="badge-blue">Agendado</span> }
+                    @if (jogo.statusJogo === 'FINALIZADO') { <span class="badge-green">Finalizado</span> }
+                    @if (jogo.statusJogo === 'CANCELADO') { <span class="badge-red">Cancelado</span> }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ABA DESPESAS -->
+      @if (tab === 'despesas') {
+        <div class="tp-section">
+          <div class="despesas-resumo">
+            <div class="desp-stat">
+              <span class="desp-stat-label">Total geral</span>
+              <span class="desp-stat-valor">{{ fmt(totalDespesas) }}</span>
+            </div>
+            <div class="desp-stat">
+              <span class="desp-stat-label">Mês atual</span>
+              <span class="desp-stat-valor highlight">{{ fmt(despesasMes) }}</span>
+            </div>
+          </div>
+
+          @if (despesas.length === 0) {
+            <div class="tp-vazio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              <p>Nenhuma despesa registrada.</p>
+            </div>
+          } @else {
+            <div class="despesas-lista">
+              @for (d of despesas; track d.id) {
+                <div class="despesa-item">
+                  <div class="despesa-info">
+                    <span class="despesa-desc">{{ d.descricao }}</span>
+                    <span class="despesa-mes">{{ d.mesReferencia }}</span>
+                  </div>
+                  <span class="badge {{ classeTipoDespesa(d.tipoDespesa) }}">{{ labelTipo(d.tipoDespesa) }}</span>
+                  <span class="despesa-valor">{{ fmt(d.valor) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ABA EVENTOS -->
+      @if (tab === 'eventos') {
+        <div class="tp-section">
+          @if (eventos.length === 0) {
+            <div class="tp-vazio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <p>Nenhum evento cadastrado.</p>
+            </div>
+          } @else {
+            <div class="eventos-grid">
+              @for (ev of eventos; track ev.id) {
+                <div class="evento-card" [class.inativo]="!ev.ativo">
+                  <div class="evento-header">
+                    <span class="evento-nome">{{ ev.nome }}</span>
+                    @if (ev.ativo) { <span class="badge-green">Ativo</span> }
+                    @else { <span class="badge-gray">Encerrado</span> }
+                  </div>
+                  @if (ev.descricao) { <p class="evento-desc">{{ ev.descricao }}</p> }
+                  <div class="evento-datas">
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      {{ formatDataCurta(ev.dataInicio) }} → {{ formatDataCurta(ev.dataFim) }}
+                    </span>
+                    @if (ev.valorSugerido) {
+                      <span class="evento-valor">{{ fmt(ev.valorSugerido) }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  }
+
+</div>

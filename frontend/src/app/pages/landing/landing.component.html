@@ -1,0 +1,214 @@
+<div class="landing">
+
+  <!-- ── HEADER ───────────────────────────────────────────── -->
+  <header class="lnd-header">
+    <div class="lnd-header-inner">
+      <a class="lnd-logo" routerLink="/">
+        <div class="lnd-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+            <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </div>
+        <span class="lnd-logo-text">Pelada<strong>Pro</strong></span>
+      </a>
+      <a routerLink="/login" class="btn-enter">
+        Já tenho um time
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── HERO ─────────────────────────────────────────────── -->
+  <section class="lnd-hero">
+    <div class="lnd-container">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Acesso antecipado — Garanta sua vaga
+      </div>
+
+      <h1 class="hero-title">
+        Da pelada<br>ao campeonato.<br>
+        <span class="hero-accent">Gerenciado como profissional.</span>
+      </h1>
+
+      <p class="hero-sub">
+        Plataforma completa para times amadores de futsal e futebol.
+        Jogos, mensalidades, campeonatos e estatísticas —
+        tudo em um lugar, no celular.
+      </p>
+
+      @if (!enviado) {
+        <form class="hero-form" (ngSubmit)="enviar()">
+          <input
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            placeholder="seu@email.com"
+            [disabled]="enviando"
+          />
+          <button type="submit" [disabled]="enviando">
+            {{ enviando ? 'Enviando...' : 'Quero testar' }}
+          </button>
+        </form>
+        @if (erro) {
+          <p class="hero-form-erro">{{ erro }}</p>
+        }
+        <p class="hero-privacy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Sem spam. Você será avisado quando abrirmos o acesso.
+        </p>
+      } @else {
+        <div class="hero-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <div>
+            <strong>Você está na lista!</strong>
+            <span>Te avisamos assim que o acesso estiver liberado.</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="hero-decoration">
+      <div class="hero-orb hero-orb-1"></div>
+      <div class="hero-orb hero-orb-2"></div>
+      <div class="hero-orb hero-orb-3"></div>
+    </div>
+  </section>
+
+  <!-- ── DOR ──────────────────────────────────────────────── -->
+  <section class="lnd-pain">
+    <div class="lnd-container">
+      <p class="section-eyebrow">O problema</p>
+      <h2 class="section-title">Você ainda faz isso?</h2>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-emoji">📱</div>
+          <h3>Cobrança no WhatsApp</h3>
+          <p>Mensagem por mensagem, sem saber quem pagou e quem deve há meses</p>
+        </div>
+        <div class="pain-card pain-card-highlight">
+          <div class="pain-emoji">📊</div>
+          <h3>Campeonato no Excel</h3>
+          <p>Planilha que só o organizador entende, atualizada manualmente depois de cada rodada</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-emoji">❓</div>
+          <h3>Zero dados reais</h3>
+          <p>Nunca sabe quem jogou mais, quem fez mais gols ou quanto o time gastou no mês</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ─────────────────────────────────────────── -->
+  <section class="lnd-features">
+    <div class="lnd-container">
+      <p class="section-eyebrow">O que resolvemos</p>
+      <h2 class="section-title">Tudo em um só lugar</h2>
+      <p class="section-sub">Para times amadores que levam o jogo a sério</p>
+      <div class="features-grid">
+        @for (f of features; track f.titulo) {
+          <div class="feature-card" [class.feature-card-soon]="f.emBreve">
+            @if (f.emBreve) {
+              <span class="soon-badge">Em breve</span>
+            }
+            <h3 class="feature-titulo">{{ f.titulo }}</h3>
+            <p class="feature-desc">{{ f.desc }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── COMO FUNCIONA ─────────────────────────────────────── -->
+  <section class="lnd-how">
+    <div class="lnd-container">
+      <p class="section-eyebrow">Como funciona</p>
+      <h2 class="section-title">Simples de usar</h2>
+      <div class="how-grid">
+        @for (p of passos; track p.num) {
+          <div class="how-step">
+            <div class="how-num">{{ p.num }}</div>
+            <h3 class="how-titulo">{{ p.titulo }}</h3>
+            <p class="how-desc">{{ p.desc }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA FINAL ─────────────────────────────────────────── -->
+  <section class="lnd-cta-section">
+    <div class="lnd-container">
+      <div class="cta-card">
+        <div class="cta-orb"></div>
+        <p class="section-eyebrow" style="color:var(--c-accent)">Acesso antecipado</p>
+        <h2 class="cta-title">Seja um dos primeiros times</h2>
+        <p class="cta-sub">
+          Garanta acesso gratuito na fase beta e ajude a moldar<br>
+          a plataforma de futsal amador que o Brasil precisa.
+        </p>
+
+        @if (!enviado) {
+          <form class="hero-form cta-form" (ngSubmit)="enviar()">
+            <input
+              type="email"
+              [(ngModel)]="email"
+              name="emailCta"
+              placeholder="seu@email.com"
+              [disabled]="enviando"
+            />
+            <button type="submit" [disabled]="enviando">
+              {{ enviando ? 'Enviando...' : 'Garantir minha vaga' }}
+            </button>
+          </form>
+          @if (erro) {
+            <p class="hero-form-erro" style="text-align:center">{{ erro }}</p>
+          }
+        } @else {
+          <div class="hero-success" style="justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <div>
+              <strong>Você está na lista!</strong>
+              <span>Te avisamos assim que o acesso estiver liberado.</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────────────────────── -->
+  <footer class="lnd-footer">
+    <div class="lnd-container lnd-footer-inner">
+      <div class="lnd-logo">
+        <div class="lnd-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+            <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </div>
+        <span class="lnd-logo-text">Pelada<strong>Pro</strong></span>
+      </div>
+      <div class="footer-right">
+        <span class="footer-copy">Plataforma de gestão para times amadores</span>
+        <span class="footer-brand">© 2025 <strong>DVT Tecnologia</strong> — Todos os direitos reservados</span>
+      </div>
+    </div>
+  </footer>
+
+</div>

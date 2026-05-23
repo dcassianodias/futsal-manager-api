@@ -1,0 +1,315 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Visão geral do seu time</p>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">Carregando...</div>
+  }
+
+  @if (!loading) {
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="card stat-card">
+        <div class="stat-icon icon-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+            <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ agendados.length }}</span>
+          <span class="stat-label">Jogos Agendados</span>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon icon-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ jogadoresAtivos }}</span>
+          <span class="stat-label">Jogadores Ativos</span>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon icon-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="1" y="4" width="22" height="16" rx="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ pendentes.length }}</span>
+          <span class="stat-label">Pgtos. Pendentes</span>
+          @if (totalMensalidadesPendentes > 0) {
+            <span class="stat-sub">Mensalidades: {{ fmt(totalMensalidadesPendentes) }}</span>
+          }
+          @if (totalEventosPendentes > 0) {
+            <span class="stat-sub">Eventos: {{ fmt(totalEventosPendentes) }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon icon-red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ fmt(despesasMes) }}</span>
+          <span class="stat-label">Despesas do Mês</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha principal: próximo jogo + resultados -->
+    <div class="content-grid">
+
+      <!-- Próximo Jogo -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Próximo Jogo</h3>
+          <a routerLink="/jogos" class="btn btn-ghost btn-sm">Ver todos</a>
+        </div>
+        @if (proximoJogo) {
+          <div class="next-game">
+            <div class="next-game-badge">AGENDADO</div>
+            <div class="next-game-vs">{{ proximoJogo.adversario }}</div>
+            <div class="next-game-detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {{ formatDataHora(proximoJogo.dataHora) }}
+            </div>
+            <div class="next-game-detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ proximoJogo.local }}
+            </div>
+          </div>
+        } @else {
+          <div class="empty-state" style="padding: 2rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+            </svg>
+            <p>Nenhum jogo agendado</p>
+            <a routerLink="/jogos" class="btn btn-primary btn-sm" style="margin-top:.5rem">Agendar Jogo</a>
+          </div>
+        }
+      </div>
+
+      <!-- Gráfico de Resultados -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Desempenho</h3>
+          <span class="card-header-sub">{{ resultadoStats.total }} jogos finalizados</span>
+        </div>
+        <div class="chart-body">
+          @if (resultadoStats.total === 0) {
+            <div class="empty-state" style="padding:1.5rem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v4l3 3"/>
+              </svg>
+              <p>Nenhum jogo finalizado ainda</p>
+            </div>
+          } @else if (donutSegments.length === 0) {
+            <!-- Tem jogos finalizados mas sem resultado cadastrado -->
+            <div class="chart-placeholder">
+              <div class="chart-donut-wrap">
+                <div class="donut-svg-container">
+                  <svg viewBox="0 0 120 120" class="donut-svg">
+                    <circle cx="60" cy="60" r="46" fill="none" stroke="var(--border)" stroke-width="12"/>
+                  </svg>
+                  <div class="donut-center">
+                    <span class="donut-pct">—</span>
+                    <span class="donut-sub">vitória</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <span class="legend-dot" style="background:#22c55e"></span>
+                  <span class="legend-label">Vitórias</span>
+                  <span class="legend-val">—</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background:#f59e0b"></span>
+                  <span class="legend-label">Empates</span>
+                  <span class="legend-val">—</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background:#ef4444"></span>
+                  <span class="legend-label">Derrotas</span>
+                  <span class="legend-val">—</span>
+                </div>
+              </div>
+              <p class="chart-hint">Resultados serão exibidos quando o campo <code>resultado</code> estiver disponível no backend.</p>
+            </div>
+          } @else {
+            <div class="chart-donut-wrap">
+              <div class="donut-svg-container">
+                <svg viewBox="0 0 120 120" class="donut-svg">
+                  <circle cx="60" cy="60" r="46" fill="none" stroke="var(--border)" stroke-width="12"/>
+                  @for (seg of donutSegments; track seg.label) {
+                    <circle
+                      cx="60" cy="60" r="46"
+                      fill="none"
+                      [attr.stroke]="seg.color"
+                      stroke-width="12"
+                      stroke-linecap="round"
+                      [attr.stroke-dasharray]="seg.dasharray"
+                      [attr.stroke-dashoffset]="seg.dashoffset"
+                    />
+                  }
+                </svg>
+                <div class="donut-center">
+                  <span class="donut-pct">{{ taxaVitoria }}%</span>
+                  <span class="donut-sub">vitória</span>
+                </div>
+              </div>
+              <div class="chart-legend">
+                @for (seg of donutSegments; track seg.label) {
+                  <div class="legend-item">
+                    <span class="legend-dot" [style.background]="seg.color"></span>
+                    <span class="legend-label">{{ seg.label }}</span>
+                    <span class="legend-val">{{ seg.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Segunda linha: artilheiros + pagamentos pendentes -->
+    <div class="content-grid" style="margin-top:1.5rem">
+
+      <!-- Artilheiros -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Artilheiros</h3>
+          <a routerLink="/jogadores" class="btn btn-ghost btn-sm">Ver plantel</a>
+        </div>
+        @if (artilheiros.length === 0) {
+          <div class="empty-state" style="padding:2rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+            </svg>
+            <p>Nenhum jogador cadastrado</p>
+          </div>
+        } @else {
+          <div class="artilheiros-list">
+            @for (u of artilheiros; track u.id; let i = $index) {
+              <div class="artilheiro-row">
+                <span class="art-rank" [class.rank-gold]="i===0" [class.rank-silver]="i===1" [class.rank-bronze]="i===2">
+                  {{ i + 1 }}
+                </span>
+                <div class="art-avatar">{{ iniciais(u.nome) }}</div>
+                <div class="art-info">
+                  <span class="art-nome">{{ u.nome }}</span>
+                  <span class="art-perfil">{{ u.perfil === 'ADMIN' ? 'Admin' : 'Atleta' }}</span>
+                </div>
+                <div class="art-gols">
+                  @if (temDadosGols) {
+                    <span class="gols-val">{{ u.gols ?? 0 }}</span>
+                    <span class="gols-label">gols</span>
+                  } @else {
+                    <span class="gols-soon">em breve</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          @if (!temDadosGols) {
+            <div class="chart-hint" style="padding:0 1.25rem 1rem">
+              Contagem de gols disponível após integração com o backend.
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Pagamentos Pendentes -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Pagamentos Pendentes</h3>
+          <a routerLink="/pagamentos" class="btn btn-ghost btn-sm">Ver todos</a>
+        </div>
+        @if (recentesPendentes.length === 0) {
+          <div class="empty-state" style="padding: 2rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <p>Sem pendências em aberto</p>
+          </div>
+        } @else {
+          @for (p of recentesPendentes; track p.id) {
+            <div class="pending-row">
+              <div class="pending-left">
+                <span class="pending-tipo">{{ p.tipoPagamento === 'MENSALIDADE' ? 'Mensalidade' : 'Evento' }}</span>
+                @if (p.mesReferencia) {
+                  <span class="pending-mes">{{ formatMes(p.mesReferencia) }}</span>
+                }
+              </div>
+              <span class="pending-valor">{{ fmt(p.valor) }}</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Agenda de Jogos -->
+    @if (agendados.length > 1) {
+      <div class="card" style="margin-top: 1.5rem">
+        <div class="card-header">
+          <h3>Agenda de Jogos</h3>
+          <a routerLink="/jogos" class="btn btn-ghost btn-sm">Gerenciar</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Adversário</th>
+                <th>Local</th>
+                <th>Data / Hora</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (j of agendados; track j.id) {
+                <tr>
+                  <td class="font-semibold">{{ j.adversario }}</td>
+                  <td>{{ j.local }}</td>
+                  <td>{{ formatDataHora(j.dataHora) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+  }
+</div>

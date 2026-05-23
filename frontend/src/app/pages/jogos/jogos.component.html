@@ -1,0 +1,206 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Jogos</h1>
+      <p class="page-subtitle">Gerencie as partidas do seu time</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" (click)="abrirPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Novo Jogo
+      </button>
+    </div>
+  </div>
+
+  <!-- Aviso convites -->
+  <div class="alert alert-info" style="margin-bottom:1rem">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    Em breve: ao agendar um jogo será possível selecionar times cadastrados na plataforma e enviar um convite para confirmação do adversário.
+  </div>
+
+  <!-- Stats pills -->
+  <div class="stat-pills">
+    <div class="stat-pill">
+      <span class="badge badge-blue">{{ agendados }}</span>
+      <span>Agendados</span>
+    </div>
+    <div class="stat-pill">
+      <span class="badge badge-green">{{ finalizados }}</span>
+      <span>Finalizados</span>
+    </div>
+    <div class="stat-pill">
+      <span class="badge badge-gray">{{ cancelados }}</span>
+      <span>Cancelados</span>
+    </div>
+  </div>
+
+  @if (sucesso) {
+    <div class="alert alert-success">{{ sucesso }}</div>
+  }
+  @if (erro && !showPanel && !showFinalizarPanel) {
+    <div class="alert alert-error">{{ erro }}</div>
+  }
+
+  <div class="card">
+    @if (loading) {
+      <div class="loading-state">Carregando jogos...</div>
+    } @else if (jogos.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3c1.5 2.5 2 5.5 2 9s-.5 6.5-2 9"/>
+          <path d="M12 3c-1.5 2.5-2 5.5-2 9s.5 6.5 2 9"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+        </svg>
+        <h3>Nenhum jogo cadastrado</h3>
+        <p>Clique em "Novo Jogo" para agendar a primeira partida</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Adversário</th>
+              <th>Local</th>
+              <th>Data / Hora</th>
+              <th>Status</th>
+              <th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (jogo of jogos; track jogo.id) {
+              <tr>
+                <td>
+                  <span class="font-semibold">{{ jogo.adversario }}</span>
+                  @if (jogo.statusJogo === 'FINALIZADO' && jogo.golsTime != null) {
+                    <div class="placar-row">
+                      <span class="placar-badge">{{ jogo.golsTime }} x {{ jogo.golsAdversario }}</span>
+                      @if (jogo.resultado) {
+                        <span [class]="resultadoClass(jogo.resultado)">{{ resultadoLabel(jogo.resultado) }}</span>
+                      }
+                    </div>
+                  }
+                  @if (jogo.observacoes) {
+                    <span class="text-sm text-muted block">{{ jogo.observacoes }}</span>
+                  }
+                </td>
+                <td>{{ jogo.local }}</td>
+                <td class="nowrap">{{ formatDataHora(jogo.dataHora) }}</td>
+                <td><span [class]="statusClass(jogo.statusJogo)">{{ statusLabel(jogo.statusJogo) }}</span></td>
+                <td class="text-right nowrap">
+                  @if (jogo.statusJogo === 'AGENDADO') {
+                    <button class="btn btn-outline btn-sm" (click)="abrirFinalizarPanel(jogo)" style="margin-right:.375rem">
+                      Finalizar
+                    </button>
+                    <button class="btn btn-ghost btn-sm" (click)="cancelar(jogo.id)" style="color:var(--danger)">
+                      Cancelar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Panel: Novo Jogo -->
+@if (showPanel) {
+  <div class="overlay" (click)="fecharPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Novo Jogo</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) {
+        <div class="alert alert-error">{{ erro }}</div>
+      }
+      <div class="form-group">
+        <label>Adversário *</label>
+        <input type="text" [(ngModel)]="form.adversario" placeholder="Nome do time adversário" autofocus />
+      </div>
+      <div class="form-group">
+        <label>Local *</label>
+        <input type="text" [(ngModel)]="form.local" placeholder="Ex: Ginásio Municipal" />
+      </div>
+      <div class="form-group">
+        <label>Data e Hora *</label>
+        <input type="datetime-local" [(ngModel)]="form.dataHora" />
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea [(ngModel)]="form.observacoes" placeholder="Informações adicionais sobre o jogo..."></textarea>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="salvar()" [disabled]="salvando">
+        {{ salvando ? 'Salvando...' : 'Salvar Jogo' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharPanel()">Cancelar</button>
+    </div>
+  </div>
+}
+
+<!-- Panel: Finalizar Jogo -->
+@if (showFinalizarPanel) {
+  <div class="overlay" (click)="fecharFinalizarPanel()"></div>
+  <div class="slide-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Finalizar vs {{ jogoParaFinalizar?.adversario }}</h2>
+      <button class="btn btn-ghost btn-icon" (click)="fecharFinalizarPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      @if (erro) {
+        <div class="alert alert-error">{{ erro }}</div>
+      }
+
+      <!-- Placar -->
+      <div class="placar-inputs">
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label>Gols do Nosso Time</label>
+          <input type="number" min="0" [(ngModel)]="finalizarForm.golsTime" />
+        </div>
+        <span class="placar-x">x</span>
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label>Gols do Adversário</label>
+          <input type="number" min="0" [(ngModel)]="finalizarForm.golsAdversario" />
+        </div>
+      </div>
+
+      <!-- Artilheiros -->
+      <div class="section-label">Artilheiros (opcional)</div>
+      <div class="artilheiro-list">
+        @if (jogadores.length === 0) {
+          <p class="text-sm" style="color:var(--text-muted)">Nenhum jogador ativo cadastrado.</p>
+        }
+        @for (j of jogadores; track j.id) {
+          <div class="artilheiro-item">
+            <span class="artilheiro-nome">{{ j.nome }}</span>
+            <div class="artilheiro-controls">
+              <button class="btn-gol" (click)="removeGol(j.id)" [disabled]="golsJogador(j.id) === 0">−</button>
+              <span class="gol-count">{{ golsJogador(j.id) }}</span>
+              <button class="btn-gol" (click)="addGol(j.id)">+</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" (click)="confirmarFinalizar()" [disabled]="salvando">
+        {{ salvando ? 'Finalizando...' : 'Finalizar Jogo' }}
+      </button>
+      <button class="btn btn-outline" (click)="fecharFinalizarPanel()">Cancelar</button>
+    </div>
+  </div>
+}
