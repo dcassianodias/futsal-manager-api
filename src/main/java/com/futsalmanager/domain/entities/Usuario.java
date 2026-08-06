@@ -45,7 +45,7 @@ public class Usuario implements UserDetails {
     private PerfilUsuario perfil;
 
     @Column(nullable = false)
-    private Boolean ativo;
+    private boolean ativo;
 
     @Column(nullable = false)
     private Integer gols = 0;
@@ -109,9 +109,9 @@ public class Usuario implements UserDetails {
         this.perfil = perfil;
     }
 
-    public Boolean getAtivo() { return ativo; }
+    public boolean isAtivo() { return ativo; }
 
-    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
 
     public Integer getGols() { return gols; }
 
@@ -177,6 +177,6 @@ public class Usuario implements UserDetails {
     }
 
     public boolean isEnabled() {
-        return Boolean.TRUE.equals(ativo);
+        return isAtivo();
     }
 }
