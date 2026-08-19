@@ -73,8 +73,6 @@ public class TimeService {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado" + id));
 
-        TimeResponse dto = timeMapper.toResponse(entity);
-
         repository.delete(entity);
         log.info("Time deletado: id={}, nome={}", entity.getId(), entity.getNome());
 
