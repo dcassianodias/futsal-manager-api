@@ -12,6 +12,7 @@ import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +28,14 @@ public class UsuarioService {
     private final TimeRepository timeRepository;
     private final UsuarioValidator validator;
 
-    public UsuarioService(UsuarioRepository repository, UsuarioMapper usuarioMapper, TimeRepository timeRepository, UsuarioValidator validator) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UsuarioService(UsuarioRepository repository, UsuarioMapper usuarioMapper, TimeRepository timeRepository, UsuarioValidator validator, PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.usuarioMapper = usuarioMapper;
         this.timeRepository = timeRepository;
         this.validator = validator;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -64,13 +68,13 @@ public class UsuarioService {
         if (existenteOpt.isPresent()) {
             Usuario existente = existenteOpt.get();
 
-            if (existente.getAtivo()) {
+            if (existente.isAtivo()) {
                 throw new BusinessException("Email já cadastrado para este time");
             }
 
             existente.setAtivo(true);
             existente.setNome(request.nome());
-            existente.setSenha(request.senha());
+            existente.setSenha(passwordEncoder.encode(request.senha()));
 
             Usuario saved = repository.save(existente);
 
@@ -82,6 +86,7 @@ public class UsuarioService {
         Usuario entity = usuarioMapper.toEntity(request);
         entity.setTime(time);
         entity.setEmail(email);
+        entity.setSenha(passwordEncoder.encode(request.senha()));
 
         Usuario saved = repository.save(entity);
 
@@ -103,7 +108,7 @@ public class UsuarioService {
         }
 
         if (request.senha() != null && !request.senha().isBlank()) {
-            entity.setSenha(request.senha());
+            entity.setSenha(passwordEncoder.encode(request.senha()));
         }
 
         Usuario saved = repository.save(entity);
@@ -130,7 +135,7 @@ public class UsuarioService {
 
         Usuario entity = buscarOuErro(id);
 
-        if (entity.getAtivo()) {
+        if (entity.isAtivo()) {
             throw new BusinessException("Usuário já está ativo");
         }
 
@@ -146,7 +151,7 @@ public class UsuarioService {
     private Usuario buscarAtivoOuErro(UUID id) {
         Usuario entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + id));
-        if (!entity.getAtivo()) {
+        if (!entity.isAtivo()) {
             throw new ResourceNotFoundException("Usuário não encontrado: " + id);
         }
         return entity;

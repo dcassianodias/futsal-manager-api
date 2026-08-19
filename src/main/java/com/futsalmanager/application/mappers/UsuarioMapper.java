@@ -23,6 +23,7 @@ public interface UsuarioMapper {
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
     @Mapping(target = "ativo", constant = "true")
+    @Mapping(target = "senha", ignore = true)
     @Mapping(
             target = "email",
             expression = "java(request.email().trim().toLowerCase())"
@@ -40,6 +41,7 @@ public interface UsuarioMapper {
     @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "senha", ignore = true)
     void updateEntityFromRequest(UsuarioUpdateRequest request, @MappingTarget Usuario entity);
 
 }

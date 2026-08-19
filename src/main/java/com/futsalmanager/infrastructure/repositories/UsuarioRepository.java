@@ -20,6 +20,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
     Optional<Usuario> findByTimeIdAndEmail(UUID timeId, String email);
 
+    Optional<Usuario> findByEmail(String email);
+
     boolean existsByTimeIdAndEmailAndAtivoTrue(UUID timeId, String email);
 
     boolean existsByTimeIdAndEmailAndIdNotAndAtivoTrue(UUID timeId, String email, UUID id);
