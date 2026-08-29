@@ -120,4 +120,18 @@ public class Time {
         return Objects.hash(id);
     }
 
+    public static Time criar(
+            String nome,
+            BigDecimal valorMensalidade,
+            Boolean ativo) {
+
+        Time time = new Time();
+
+        time.nome = nome;
+        time.valorMensalidade = valorMensalidade;
+        time.ativo = ativo;
+
+        return time;
+    }
+
 }
