@@ -68,6 +68,17 @@ public class PagamentoController {
         return ResponseEntity.ok(pagamentoService.findByTime(timeId));
     }
 
+    @GetMapping("/usuario/{usuarioId}")
+    @Operation(summary = "Listar histórico de pagamentos por usuário")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Histórico de pagamentos do usuário",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = PagamentoResponse.class)))
+    )
+    public ResponseEntity<List<PagamentoResponse>> findByUsuario(@PathVariable UUID usuarioId){
+        return ResponseEntity.ok(pagamentoService.findByUsuario(usuarioId));
+    }
+
     @GetMapping("/usuario/{usuarioId}/pendentes")
     @Operation(summary = "Listar pagamentos pendentes por usuário")
     @ApiResponse(

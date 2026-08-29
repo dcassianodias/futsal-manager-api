@@ -15,6 +15,8 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
 
     List<Pagamento> findByTimeIdOrderByDataCriacaoDesc(UUID timeId);
 
+    List<Pagamento> findByUsuarioIdOrderByDataCriacaoDesc(UUID usuarioId);
+
     List<Pagamento> findByUsuarioIdAndStatusPagamentoOrderByDataCriacaoDesc(
             UUID usuarioId, StatusPagamento statusPagamento
     );

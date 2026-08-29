@@ -247,6 +247,27 @@ public class PagamentoService {
     }
 
     @Transactional(readOnly = true)
+    public List<PagamentoResponse> findByUsuario(UUID usuarioId) {
+        Usuario alvo = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + usuarioId));
+
+        Usuario logado = authenticatedUserProvider.getUsuarioAutenticado();
+        boolean consultandoProprioHistorico = logado.getId().equals(usuarioId);
+
+        if (!consultandoProprioHistorico) {
+            authenticatedUserProvider.validarAcessoAoTime(alvo.getTime().getId());
+            if (logado.getPerfil() != PerfilUsuario.ADMIN) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Você só pode consultar seu próprio histórico de pagamentos");
+            }
+        }
+
+        return pagamentoMapper.toResponseList(
+                pagamentoRepository.findByUsuarioIdOrderByDataCriacaoDesc(usuarioId)
+        );
+    }
+
+    @Transactional(readOnly = true)
     public List<PagamentoResponse> findPendentesByTime(UUID timeId) {
         authenticatedUserProvider.validarAcessoAoTime(timeId);
         return pagamentoMapper.toResponseList(
