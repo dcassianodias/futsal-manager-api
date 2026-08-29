@@ -16,6 +16,7 @@ import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -36,17 +37,20 @@ public class JogoService {
     private final UsuarioRepository usuarioRepository;
     private final JogoMapper jogoMapper;
     private final JogoValidator validator;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
     public JogoService(JogoRepository jogoRepository,
                        TimeRepository timeRepository,
                        UsuarioRepository usuarioRepository,
                        JogoMapper jogoMapper,
-                       JogoValidator validator) {
+                       JogoValidator validator,
+                       AuthenticatedUserProvider authenticatedUserProvider) {
         this.jogoRepository = jogoRepository;
         this.timeRepository = timeRepository;
         this.usuarioRepository = usuarioRepository;
         this.jogoMapper = jogoMapper;
         this.validator = validator;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +67,7 @@ public class JogoService {
 
     @Transactional(readOnly = true)
     public List<JogoResponse> findByTime(UUID timeId) {
+        authenticatedUserProvider.validarAcessoAoTime(timeId);
         return jogoMapper.toResponseList(
                 jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraAsc(
                         timeId,
@@ -71,6 +76,8 @@ public class JogoService {
 
     @Transactional
     public JogoResponse create(JogoCreateRequest request) {
+
+        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
 
         // 1. valida existência primeiro
         Time time = timeRepository.findById(request.timeId())
@@ -103,6 +110,7 @@ public class JogoService {
     public JogoResponse update(UUID id, JogoUpdateRequest request) {
 
         Jogo entity = buscarOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         // valida regra (inclui status + conflito agenda)
         validator.validarUpdate(id, request, entity);
@@ -130,6 +138,7 @@ public class JogoService {
     @Transactional
     public JogoResponse finalizar(UUID id, FinalizarJogoRequest request) {
         Jogo entity = buscarOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
         validator.validarPodeFinalizar(entity);
 
         entity.setStatusJogo(StatusJogo.FINALIZADO);
@@ -162,6 +171,7 @@ public class JogoService {
     @Transactional
     public JogoResponse cancelar(UUID id) {
         Jogo entity = buscarOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         // 🔥 agora centralizado
         validator.validarPodeCancelar(entity);

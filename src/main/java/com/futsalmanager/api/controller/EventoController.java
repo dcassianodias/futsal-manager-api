@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -47,6 +48,7 @@ public class EventoController {
         return service.findById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(
             summary = "Encontrar todos os eventos",
@@ -76,6 +78,7 @@ public class EventoController {
         return ResponseEntity.ok(list);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Criar novo evento",
@@ -98,6 +101,7 @@ public class EventoController {
         return ResponseEntity.created(uri).body(created);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(
             summary = "Atualizar evento",
@@ -112,6 +116,7 @@ public class EventoController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/desativar")
     @Operation(
             summary = "Desativar evento",
@@ -126,6 +131,7 @@ public class EventoController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/ativar")
     @Operation(
             summary = "Ativar evento",

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -47,6 +48,7 @@ public class DespesaController {
         return service.findById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(
             summary = "Encontrar todas as despesas",
@@ -77,6 +79,7 @@ public class DespesaController {
         return ResponseEntity.ok(list);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Criar nova despesa",
@@ -99,6 +102,7 @@ public class DespesaController {
         return ResponseEntity.created(uri).body(created);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(
             summary = "Atualizar despesa",
@@ -114,6 +118,7 @@ public class DespesaController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir despesa",
             description = "Exclui uma despesa existente pelo seu ID. Retorna status 204 No Content em caso de sucesso."

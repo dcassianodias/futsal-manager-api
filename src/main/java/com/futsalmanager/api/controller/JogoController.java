@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -45,6 +46,7 @@ public class JogoController {
         return service.findById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(summary = "Listar todos os jogos")
     @ApiResponse(
@@ -68,6 +70,7 @@ public class JogoController {
         return ResponseEntity.ok(list); // 🔥 sempre 200
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(summary = "Criar novo jogo")
     @ApiResponse(
@@ -87,6 +90,7 @@ public class JogoController {
         return ResponseEntity.created(uri).body(created);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar jogo")
     @ApiResponse(
@@ -99,6 +103,7 @@ public class JogoController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/finalizar")
     @Operation(summary = "Finalizar jogo com placar e artilheiros")
     @ApiResponse(
@@ -111,6 +116,7 @@ public class JogoController {
         return ResponseEntity.ok(service.finalizar(id, request));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/cancelar")
     @Operation(summary = "Cancelar jogo")
     @ApiResponse(

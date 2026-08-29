@@ -11,6 +11,7 @@ import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.infrastructure.repositories.DespesaRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,19 +28,24 @@ public class DespesaService {
     private final TimeRepository timeRepository;
     private final DespesaMapper despesaMapper;
     private final DespesaValidator validator;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
     public DespesaService(DespesaRepository despesaRepository, TimeRepository timeRepository,
-                          DespesaMapper despesaMapper, DespesaValidator validator) {
+                          DespesaMapper despesaMapper, DespesaValidator validator,
+                          AuthenticatedUserProvider authenticatedUserProvider) {
         this.despesaRepository = despesaRepository;
         this.timeRepository = timeRepository;
         this.despesaMapper = despesaMapper;
         this.validator = validator;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
     @Transactional(readOnly = true)
     public DespesaResponse findById(UUID id) {
-        return despesaMapper.toResponse(despesaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id)));
+        Despesa entity = despesaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        return despesaMapper.toResponse(entity);
     }
 
     @Transactional(readOnly = true)
@@ -49,11 +55,13 @@ public class DespesaService {
 
     @Transactional(readOnly = true)
     public List<DespesaResponse> findByTime(UUID timeId){
+        authenticatedUserProvider.validarAcessoAoTime(timeId);
         return despesaMapper.toResponseList(despesaRepository.findByTimeIdOrderByMesReferenciaDesc(timeId));
     }
 
     @Transactional
     public DespesaResponse create(DespesaCreateRequest request){
+        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
         validator.validarCreate(request);
 
         Time time = timeRepository.findById(request.timeId())
@@ -73,6 +81,7 @@ public class DespesaService {
     public DespesaResponse update(UUID id, DespesaUpdateRequest request) {
         Despesa entity = despesaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         validator.validarUpdate(request);
 
@@ -85,6 +94,7 @@ public class DespesaService {
     public void delete(UUID id) {
         Despesa entity = despesaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         despesaRepository.delete(entity);
 

@@ -11,6 +11,7 @@ import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,18 +30,21 @@ public class UsuarioService {
     private final UsuarioValidator validator;
 
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
-    public UsuarioService(UsuarioRepository repository, UsuarioMapper usuarioMapper, TimeRepository timeRepository, UsuarioValidator validator, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository repository, UsuarioMapper usuarioMapper, TimeRepository timeRepository, UsuarioValidator validator, PasswordEncoder passwordEncoder, AuthenticatedUserProvider authenticatedUserProvider) {
         this.repository = repository;
         this.usuarioMapper = usuarioMapper;
         this.timeRepository = timeRepository;
         this.validator = validator;
         this.passwordEncoder = passwordEncoder;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
     @Transactional(readOnly = true)
     public UsuarioResponse findById(UUID id) {
         Usuario entity = buscarAtivoOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
         return usuarioMapper.toResponse(entity);
     }
 
@@ -51,11 +55,13 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public List<UsuarioResponse> findByTimeId(UUID timeId) {
+        authenticatedUserProvider.validarAcessoAoTime(timeId);
         return usuarioMapper.toResponseList(repository.findByTimeIdAndAtivoTrue(timeId));
     }
 
     @Transactional
     public UsuarioResponse create(UsuarioCreateRequest request) {
+        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
         validator.validarCreate(request);
 
         Time time = timeRepository.findById(request.timeId())
@@ -98,6 +104,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse update(UUID id, UsuarioUpdateRequest request) {
         Usuario entity = buscarAtivoOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         validator.validarUpdate(entity, request);
 
@@ -122,6 +129,7 @@ public class UsuarioService {
     @Transactional
     public void delete(UUID id) {
         Usuario entity = buscarAtivoOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         entity.setAtivo(false);
 
@@ -134,6 +142,7 @@ public class UsuarioService {
     public UsuarioResponse reativar(UUID id) {
 
         Usuario entity = buscarOuErro(id);
+        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         if (entity.isAtivo()) {
             throw new BusinessException("Usuário já está ativo");
