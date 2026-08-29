@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -44,6 +45,7 @@ public class UsuarioController {
         return service.findById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(summary = "Listar todos os usuários ativos")
     @ApiResponse(
@@ -66,6 +68,7 @@ public class UsuarioController {
         return service.findByTimeId(timeId);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(summary = "Criar novo usuário")
     @ApiResponse(
@@ -85,6 +88,7 @@ public class UsuarioController {
         return ResponseEntity.created(uri).body(created);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar usuário")
     @ApiResponse(
@@ -97,6 +101,7 @@ public class UsuarioController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(summary = "Desativar usuário (soft delete)")
     @ApiResponse(
@@ -108,6 +113,7 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/reativar")
     @Operation(summary = "Reativar usuário")
     @ApiResponse(
