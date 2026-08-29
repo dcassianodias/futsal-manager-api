@@ -8,11 +8,13 @@ import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 
 @Configuration
+@Profile("!prod")
 public class DataInitializer {
 
     @Bean
