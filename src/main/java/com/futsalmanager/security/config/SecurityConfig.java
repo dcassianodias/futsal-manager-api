@@ -1,7 +1,10 @@
 package com.futsalmanager.security.config;
 
+import com.futsalmanager.security.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -12,9 +15,16 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -50,9 +60,22 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth ->
                         auth
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/time/v1/*").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/jogo/v1/*").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/despesa/v1/*").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/evento/v1/*").permitAll()
                                 .anyRequest().authenticated()
-                );
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(
+                                (request, response, authException) -> {
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Não autenticado");
+                        }
+                        )
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
