@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -44,8 +45,9 @@ public class TimeController {
         return timeService.findById(id);
     }
 
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @GetMapping
-    @Operation(summary = "Listar todos os times")
+    @Operation(summary = "Listar todos os times (restrito ao dono da plataforma)")
     @ApiResponse(
             responseCode = "200",
             description = "Lista de times",
@@ -74,6 +76,7 @@ public class TimeController {
         return ResponseEntity.created(uri).body(created);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar time")
     @ApiResponse(
@@ -86,8 +89,9 @@ public class TimeController {
         return ResponseEntity.ok(timeService.update(id, request));
     }
 
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @DeleteMapping("/{id}")
-    @Operation(summary = "Excluir time")
+    @Operation(summary = "Excluir time (restrito ao dono da plataforma)")
     @ApiResponse(
             responseCode = "204",
             description = "Time excluído"
@@ -97,6 +101,7 @@ public class TimeController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/desativar")
     @Operation(summary = "Desativar time")
     @ApiResponse(
@@ -108,6 +113,7 @@ public class TimeController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/ativar")
     @Operation(summary = "Ativar time")
     @ApiResponse(

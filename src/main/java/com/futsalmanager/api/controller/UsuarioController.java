@@ -45,9 +45,9 @@ public class UsuarioController {
         return service.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @GetMapping
-    @Operation(summary = "Listar todos os usuários ativos")
+    @Operation(summary = "Listar todos os usuários ativos (restrito ao dono da plataforma)")
     @ApiResponse(
             responseCode = "200",
             description = "Lista de usuários",
@@ -88,9 +88,8 @@ public class UsuarioController {
         return ResponseEntity.created(uri).body(created);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
-    @Operation(summary = "Atualizar usuário")
+    @Operation(summary = "Atualizar usuário (o próprio perfil, ou qualquer um do time se for admin)")
     @ApiResponse(
             responseCode = "200",
             description = "Usuário atualizado",

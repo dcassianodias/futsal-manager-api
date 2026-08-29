@@ -20,6 +20,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
     long countByTimeIdAndPerfilAndAtivoTrue(UUID timeId, PerfilUsuario perfil);
 
+    long countByAtivoTrue();
+
+    long countByPerfilAndAtivoTrue(PerfilUsuario perfil);
+
     Optional<Usuario> findByTimeIdAndEmail(UUID timeId, String email);
 
     Optional<Usuario> findByEmail(String email);

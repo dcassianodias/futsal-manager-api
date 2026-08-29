@@ -107,6 +107,19 @@ public class UsuarioService {
         Usuario entity = buscarAtivoOuErro(id);
         authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
+        Usuario logado = authenticatedUserProvider.getUsuarioAutenticado();
+        boolean editandoProprioPerfil = logado.getId().equals(id);
+
+        if (!editandoProprioPerfil && logado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Você só pode editar o próprio perfil.");
+        }
+
+        if (request.perfil() != null && logado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Apenas administradores podem alterar o perfil de um usuário.");
+        }
+
         validator.validarUpdate(entity, request);
 
         if (request.perfil() == PerfilUsuario.ATLETA

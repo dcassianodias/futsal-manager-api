@@ -48,10 +48,10 @@ public class EventoController {
         return service.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @GetMapping
     @Operation(
-            summary = "Encontrar todos os eventos",
+            summary = "Encontrar todos os eventos (restrito ao dono da plataforma)",
             description = "Retorna uma lista de todos os eventos ativos."
     )
     @ApiResponse(

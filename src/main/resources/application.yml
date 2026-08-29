@@ -27,3 +27,7 @@ cors:
   # em produção, defina CORS_ALLOWED_ORIGIN com a URL do frontend (ex: https://futsal-manager.vercel.app)
   allowed-origin: ${CORS_ALLOWED_ORIGIN:*}
 
+app:
+  # email da conta que pode ver estatísticas globais e dados entre times (defina em produção)
+  platform-owner-email: ${PLATFORM_OWNER_EMAIL:}
+

@@ -48,10 +48,10 @@ public class DespesaController {
         return service.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @GetMapping
     @Operation(
-            summary = "Encontrar todas as despesas",
+            summary = "Encontrar todas as despesas (restrito ao dono da plataforma)",
             description = "Retorna uma lista de todas as despesas."
     )
     @ApiResponse(

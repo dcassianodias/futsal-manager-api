@@ -46,9 +46,9 @@ public class JogoController {
         return service.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @GetMapping
-    @Operation(summary = "Listar todos os jogos")
+    @Operation(summary = "Listar todos os jogos (restrito ao dono da plataforma)")
     @ApiResponse(
             responseCode = "200",
             description = "Lista de jogos",

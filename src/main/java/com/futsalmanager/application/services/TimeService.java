@@ -8,6 +8,8 @@ import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.TimeMapper;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
+import com.futsalmanager.security.service.PlatformOwnerGuard;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,16 +23,26 @@ public class TimeService {
 
     private final TimeRepository repository;
     private final TimeMapper timeMapper;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
+    private final PlatformOwnerGuard platformOwnerGuard;
 
-    public TimeService(TimeRepository repository, TimeMapper timeMapper) {
+    public TimeService(TimeRepository repository, TimeMapper timeMapper,
+                       AuthenticatedUserProvider authenticatedUserProvider,
+                       PlatformOwnerGuard platformOwnerGuard) {
         this.repository = repository;
         this.timeMapper = timeMapper;
+        this.authenticatedUserProvider = authenticatedUserProvider;
+        this.platformOwnerGuard = platformOwnerGuard;
     }
 
     @Transactional(readOnly = true)
     public TimeResponse findById(UUID id) {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
+
+        if (!platformOwnerGuard.isOwner()) {
+            authenticatedUserProvider.validarAcessoAoTime(id);
+        }
 
         return timeMapper.toResponse(entity);
     }
@@ -59,6 +71,10 @@ public class TimeService {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
+        if (!platformOwnerGuard.isOwner()) {
+            authenticatedUserProvider.validarAcessoAoTime(id);
+        }
+
         timeMapper.updateEntityFromRequest(request, entity);
 
         Time saved = repository.save(entity);
@@ -73,6 +89,8 @@ public class TimeService {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado" + id));
 
+        // exclusão definitiva é restrita ao dono da plataforma; admins de time usam desativar()
+
         repository.delete(entity);
         log.info("Time deletado: id={}, nome={}", entity.getId(), entity.getNome());
 
@@ -82,6 +100,10 @@ public class TimeService {
     public void desativar(UUID id) {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
+
+        if (!platformOwnerGuard.isOwner()) {
+            authenticatedUserProvider.validarAcessoAoTime(id);
+        }
 
         if (!entity.getAtivo()) {
             throw new BusinessException("Time já está inativo");
@@ -98,6 +120,10 @@ public class TimeService {
     public void ativar(UUID id) {
         Time entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
+
+        if (!platformOwnerGuard.isOwner()) {
+            authenticatedUserProvider.validarAcessoAoTime(id);
+        }
 
         if (entity.getAtivo()) {
             throw new BusinessException("Time já está ativo");

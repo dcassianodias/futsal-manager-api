@@ -17,6 +17,8 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
 
     List<Pagamento> findByUsuarioIdOrderByDataCriacaoDesc(UUID usuarioId);
 
+    long countByStatusPagamento(StatusPagamento statusPagamento);
+
     List<Pagamento> findByUsuarioIdAndStatusPagamentoOrderByDataCriacaoDesc(
             UUID usuarioId, StatusPagamento statusPagamento
     );

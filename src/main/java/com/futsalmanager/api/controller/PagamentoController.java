@@ -45,9 +45,9 @@ public class PagamentoController {
         return pagamentoService.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@platformOwnerGuard.isOwner()")
     @GetMapping
-    @Operation(summary = "Listar todos os pagamentos")
+    @Operation(summary = "Listar todos os pagamentos (restrito ao dono da plataforma)")
     @ApiResponse(
             responseCode = "200",
             description = "Lista de pagamentos",
