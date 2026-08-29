@@ -1,10 +1,10 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/futsaldb
-    username: futsaluser
-    password: futsalpass
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:futsaldb}
+    username: ${PGUSER:futsaluser}
+    password: ${PGPASSWORD:futsalpass}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -22,4 +22,8 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: 3600000 # 1 hour in milliseconds
+
+cors:
+  # em produção, defina CORS_ALLOWED_ORIGIN com a URL do frontend (ex: https://futsal-manager.vercel.app)
+  allowed-origin: ${CORS_ALLOWED_ORIGIN:*}
 
