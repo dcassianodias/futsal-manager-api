@@ -1,5 +1,6 @@
 package com.futsalmanager.api.dto.request;
 
+import com.futsalmanager.domain.enums.PerfilUsuario;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -40,5 +41,11 @@ public record UsuarioCreateRequest(
         )
         @NotBlank(message = "Senha é obrigatória")
         @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres")
-        String senha
+        String senha,
+
+        @Schema(
+                description = "Perfil do usuário (padrão ATLETA se omitido)",
+                example = "ATLETA"
+        )
+        PerfilUsuario perfil
 ) {}

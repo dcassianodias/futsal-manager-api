@@ -30,14 +30,13 @@ public interface UsuarioMapper {
     )
     @Mapping(
             target = "perfil",
-            expression = "java(com.futsalmanager.domain.enums.PerfilUsuario.ATLETA)"
+            expression = "java(request.perfil() != null ? request.perfil() : com.futsalmanager.domain.enums.PerfilUsuario.ATLETA)"
     )
     Usuario toEntity(UsuarioCreateRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "time", ignore = true)
-    @Mapping(target = "perfil", ignore = true)
     @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)

@@ -35,6 +35,9 @@ public class UsuarioValidator {
 
     private void validarEmailDuplicadoUpdate(Usuario entity, UsuarioUpdateRequest request) {
 
+        // email é opcional no update → só valida se vier
+        if (request.email() == null || request.email().isBlank()) return;
+
         String email = request.email().toLowerCase();
 
         if (!entity.getEmail().equals(email)) {

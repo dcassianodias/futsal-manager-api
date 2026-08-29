@@ -9,6 +9,7 @@ import com.futsalmanager.application.mappers.UsuarioMapper;
 import com.futsalmanager.application.validators.UsuarioValidator;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import com.futsalmanager.security.service.AuthenticatedUserProvider;
@@ -107,6 +108,12 @@ public class UsuarioService {
         authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
 
         validator.validarUpdate(entity, request);
+
+        if (request.perfil() == PerfilUsuario.ATLETA
+                && entity.getPerfil() == PerfilUsuario.ADMIN
+                && repository.countByTimeIdAndPerfilAndAtivoTrue(entity.getTime().getId(), PerfilUsuario.ADMIN) <= 1) {
+            throw new BusinessException("Não é possível rebaixar o único administrador do time.");
+        }
 
         usuarioMapper.updateEntityFromRequest(request, entity);
 
