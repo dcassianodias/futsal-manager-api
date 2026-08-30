@@ -3,6 +3,9 @@ package com.futsalmanager.api.controller;
 import com.futsalmanager.api.dto.request.TimeCreateRequest;
 import com.futsalmanager.api.dto.request.TimeUpdateRequest;
 import com.futsalmanager.api.dto.response.TimeResponse;
+import com.futsalmanager.domain.entities.Time;
+import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
@@ -15,14 +18,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -50,6 +58,8 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
 
     private TimeCreateRequest createRequest;
 
+    private Authentication currentAuth;
+
     @BeforeEach
     void setUp() {
         timeRepository.deleteAll();
@@ -58,6 +68,36 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             "Time com PostgreSQL",
             BigDecimal.valueOf(100.00)
         );
+
+        autenticarComoTime(UUID.randomUUID());
+    }
+
+    /**
+     * Troca qual usuário fica autenticado nas próximas chamadas ao MockMvc
+     * (use junto com auth(), aplicado em cada .perform(...)). O time não
+     * precisa existir no banco - nada relê o principal a partir dele.
+     */
+    private void autenticarComoTime(UUID timeId) {
+        Time time = new Time(timeId, null, null, null, null, null);
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setNome("Usuário de Teste");
+        usuario.setEmail("teste-auth@email.com");
+        usuario.setSenha("senha");
+        usuario.setPerfil(PerfilUsuario.ADMIN);
+        usuario.setAtivo(true);
+        usuario.setTime(time);
+
+        currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+    }
+
+    /**
+     * RequestPostProcessor que injeta o usuário autenticado atual na
+     * requisição - setar o SecurityContextHolder direto não sobrevive
+     * ao SecurityContextHolderFilter entre chamadas separadas do MockMvc.
+     */
+    private RequestPostProcessor auth() {
+        return request -> authentication(currentAuth).postProcessRequest(request);
     }
 
     @Test
@@ -68,6 +108,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             post("/api/time/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", notNullValue()))
@@ -90,6 +131,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             post("/api/time/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated())
         .andReturn();
@@ -118,6 +160,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
                 post("/api/time/v1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json)
+                    .with(auth())
             )
             .andExpect(status().isCreated());
         }
@@ -141,6 +184,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             post("/api/time/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isBadRequest());
 
@@ -152,6 +196,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
     void update_DeveAtualizarNoPostgreSQL() throws Exception {
         // Criar time
         TimeResponse created = criarTime();
+        autenticarComoTime(created.id());
 
         // Atualizar
         TimeUpdateRequest updateRequest = new TimeUpdateRequest(
@@ -165,6 +210,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             patch("/api/time/v1/{id}", created.id())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isOk());
 
@@ -181,6 +227,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             post("/api/time/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated())
         .andReturn();

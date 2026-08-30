@@ -8,6 +8,8 @@ import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.TimeMapper;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
+import com.futsalmanager.security.service.PlatformOwnerGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +37,12 @@ class TimeServiceTest {
 
     @Mock
     private TimeMapper timeMapper;
+
+    @Mock
+    private AuthenticatedUserProvider authenticatedUserProvider;
+
+    @Mock
+    private PlatformOwnerGuard platformOwnerGuard;
 
     @InjectMocks
     private TimeService timeService;
@@ -178,15 +186,14 @@ class TimeServiceTest {
     void delete_DeveDeletarTime_QuandoTimeExiste() {
         // Arrange
         when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
-        when(timeMapper.toResponse(time)).thenReturn(timeResponse);
 
         // Act
         timeService.delete(timeId);
 
         // Assert
         verify(timeRepository).findById(timeId);
-        verify(timeMapper).toResponse(time);
         verify(timeRepository).delete(time);
+        verifyNoInteractions(timeMapper);
     }
 
     @Test

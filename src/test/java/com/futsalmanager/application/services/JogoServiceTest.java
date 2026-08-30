@@ -1,5 +1,6 @@
 package com.futsalmanager.application.services;
 
+import com.futsalmanager.api.dto.request.FinalizarJogoRequest;
 import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
 import com.futsalmanager.api.dto.response.JogoResponse;
@@ -12,6 +13,8 @@ import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +49,12 @@ class JogoServiceTest {
 
     @Mock
     private JogoValidator validator;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private AuthenticatedUserProvider authenticatedUserProvider;
 
     @InjectMocks
     private JogoService jogoService;
@@ -92,14 +101,14 @@ class JogoServiceTest {
         List<Jogo> jogos = List.of(jogo);
         List<JogoResponse> responses = List.of(response);
 
-        when(jogoRepository.findByStatusJogoNotOrderByDataHoraDesc(StatusJogo.CANCELADO))
+        when(jogoRepository.findByStatusJogoNotOrderByDataHoraAsc(StatusJogo.CANCELADO))
             .thenReturn(jogos);
         when(jogoMapper.toResponseList(jogos)).thenReturn(responses);
 
         List<JogoResponse> result = jogoService.findAll();
 
         assertThat(result).isEqualTo(responses);
-        verify(jogoRepository).findByStatusJogoNotOrderByDataHoraDesc(StatusJogo.CANCELADO);
+        verify(jogoRepository).findByStatusJogoNotOrderByDataHoraAsc(StatusJogo.CANCELADO);
     }
 
     @Test
@@ -109,14 +118,14 @@ class JogoServiceTest {
         List<Jogo> jogos = List.of(jogo);
         List<JogoResponse> responses = List.of(response);
 
-        when(jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraDesc(timeId, StatusJogo.CANCELADO))
+        when(jogoRepository.findByTimeIdAndStatusJogoNotOrderByDataHoraAsc(timeId, StatusJogo.CANCELADO))
             .thenReturn(jogos);
         when(jogoMapper.toResponseList(jogos)).thenReturn(responses);
 
         List<JogoResponse> result = jogoService.findByTime(timeId);
 
         assertThat(result).isEqualTo(responses);
-        verify(jogoRepository).findByTimeIdAndStatusJogoNotOrderByDataHoraDesc(timeId, StatusJogo.CANCELADO);
+        verify(jogoRepository).findByTimeIdAndStatusJogoNotOrderByDataHoraAsc(timeId, StatusJogo.CANCELADO);
     }
 
     @Test
@@ -198,30 +207,36 @@ class JogoServiceTest {
         Jogo jogo = mock(Jogo.class);
         JogoResponse response = mock(JogoResponse.class);
         Time time = new Time(timeId, "Time Teste", null, true, null, null);
+        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogoRepository.save(jogo)).thenReturn(jogo);
         when(jogo.getTime()).thenReturn(time);
         when(jogoMapper.toResponse(jogo)).thenReturn(response);
 
-        JogoResponse result = jogoService.finalizar(jogoId);
+        JogoResponse result = jogoService.finalizar(jogoId, request);
 
         assertThat(result).isEqualTo(response);
         verify(jogoRepository).findById(jogoId);
         verify(validator).validarPodeFinalizar(jogo);
         verify(jogo).setStatusJogo(StatusJogo.FINALIZADO);
+        verify(jogo).setGolsTime(3);
+        verify(jogo).setGolsAdversario(1);
         verify(jogoRepository).save(jogo);
     }
 
     @Test
     void finalizar_DeveLancarBusinessException_QuandoJogoNaoAgendado() {
         Jogo jogo = mock(Jogo.class);
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
+        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
+        when(jogo.getTime()).thenReturn(time);
         doThrow(new BusinessException("Só é possível finalizar jogos agendados"))
             .when(validator).validarPodeFinalizar(jogo);
 
-        assertThatThrownBy(() -> jogoService.finalizar(jogoId))
+        assertThatThrownBy(() -> jogoService.finalizar(jogoId, request))
             .isInstanceOf(BusinessException.class)
             .hasMessage("Só é possível finalizar jogos agendados");
 
@@ -253,8 +268,10 @@ class JogoServiceTest {
     @Test
     void cancelar_DeveLancarBusinessException_QuandoJogoNaoAgendado() {
         Jogo jogo = mock(Jogo.class);
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
+        when(jogo.getTime()).thenReturn(time);
         doThrow(new BusinessException("Só é possível cancelar jogos agendados"))
             .when(validator).validarPodeCancelar(jogo);
 

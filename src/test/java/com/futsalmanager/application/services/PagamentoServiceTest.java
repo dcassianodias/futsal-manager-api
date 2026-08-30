@@ -19,6 +19,7 @@ import com.futsalmanager.infrastructure.repositories.EventoRepository;
 import com.futsalmanager.infrastructure.repositories.PagamentoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +57,9 @@ class PagamentoServiceTest {
     @Mock
     private PagamentoValidator validator;
 
+    @Mock
+    private AuthenticatedUserProvider authenticatedUserProvider;
+
     @InjectMocks
     private PagamentoService pagamentoService;
 
@@ -77,6 +81,7 @@ class PagamentoServiceTest {
         Pagamento pagamento = mock(Pagamento.class);
         PagamentoResponse response = mock(PagamentoResponse.class);
 
+        when(pagamento.getTime()).thenReturn(mock(Time.class));
         when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
         when(pagamentoMapper.toResponse(pagamento)).thenReturn(response);
 
@@ -136,7 +141,7 @@ class PagamentoServiceTest {
         PagamentoCreateRequest request = mock(PagamentoCreateRequest.class);
         when(request.timeId()).thenReturn(timeId);
         when(request.usuarioId()).thenReturn(usuarioId);
-        when(request.tipo()).thenReturn(TipoPagamento.MENSALIDADE);
+        when(request.tipoPagamento()).thenReturn(TipoPagamento.MENSALIDADE);
 
         Time time = mock(Time.class);
         Usuario usuario = mock(Usuario.class);
@@ -179,6 +184,7 @@ class PagamentoServiceTest {
         Pagamento pagamento = mock(Pagamento.class);
         when(pagamento.getTipoPagamento()).thenReturn(TipoPagamento.MENSALIDADE);
         when(pagamento.getStatusPagamento()).thenReturn(StatusPagamento.PENDENTE);
+        when(pagamento.getTime()).thenReturn(mock(Time.class));
         PagamentoResponse response = mock(PagamentoResponse.class);
 
         when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
@@ -258,6 +264,7 @@ class PagamentoServiceTest {
     void cancelar_DeveCancelarPagamento_QuandoPagamentoPendente() {
         Pagamento pagamento = mock(Pagamento.class);
         when(pagamento.getStatusPagamento()).thenReturn(StatusPagamento.PENDENTE);
+        when(pagamento.getTime()).thenReturn(mock(Time.class));
         PagamentoResponse response = mock(PagamentoResponse.class);
 
         when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
@@ -276,6 +283,7 @@ class PagamentoServiceTest {
     void cancelar_DeveLancarBusinessException_QuandoPagamentoPago() {
         Pagamento pagamento = mock(Pagamento.class);
         when(pagamento.getStatusPagamento()).thenReturn(StatusPagamento.PAGO);
+        when(pagamento.getTime()).thenReturn(mock(Time.class));
 
         when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
 
@@ -289,11 +297,14 @@ class PagamentoServiceTest {
 
     @Test
     void findPendentesByUsuario_DeveRetornarPagamentosPendentesDoUsuario() {
+        Usuario usuario = mock(Usuario.class);
+        when(usuario.getTime()).thenReturn(mock(Time.class));
         Pagamento pagamento = mock(Pagamento.class);
         PagamentoResponse response = mock(PagamentoResponse.class);
         List<Pagamento> pagamentos = List.of(pagamento);
         List<PagamentoResponse> responses = List.of(response);
 
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(pagamentoRepository.findByUsuarioIdAndStatusPagamentoOrderByDataCriacaoDesc(usuarioId, StatusPagamento.PENDENTE))
             .thenReturn(pagamentos);
         when(pagamentoMapper.toResponseList(pagamentos)).thenReturn(responses);
@@ -307,6 +318,7 @@ class PagamentoServiceTest {
     @Test
     void marcarComoPago_DeveMarcarPagamentoComoPago_QuandoPagamentoPendente() {
         Pagamento pagamento = mock(Pagamento.class);
+        when(pagamento.getTime()).thenReturn(mock(Time.class));
         PagamentoResponse response = mock(PagamentoResponse.class);
 
         when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
@@ -325,6 +337,7 @@ class PagamentoServiceTest {
     void marcarComoPago_DeveLancarBusinessException_QuandoPagamentoJaPago() {
         Pagamento pagamento = mock(Pagamento.class);
         when(pagamento.getStatusPagamento()).thenReturn(StatusPagamento.PAGO);
+        when(pagamento.getTime()).thenReturn(mock(Time.class));
 
         when(pagamentoRepository.findById(pagamentoId)).thenReturn(Optional.of(pagamento));
 

@@ -10,6 +10,7 @@ import com.futsalmanager.domain.entities.Despesa;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.infrastructure.repositories.DespesaRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,9 @@ class DespesaServiceTest {
     @Mock
     private DespesaValidator validator;
 
+    @Mock
+    private AuthenticatedUserProvider authenticatedUserProvider;
+
     @InjectMocks
     private DespesaService despesaService;
 
@@ -57,6 +61,7 @@ class DespesaServiceTest {
         Despesa despesa = mock(Despesa.class);
         DespesaResponse response = mock(DespesaResponse.class);
 
+        when(despesa.getTime()).thenReturn(mock(Time.class));
         when(despesaRepository.findById(despesaId)).thenReturn(Optional.of(despesa));
         when(despesaMapper.toResponse(despesa)).thenReturn(response);
 
@@ -156,6 +161,7 @@ class DespesaServiceTest {
         Despesa despesa = mock(Despesa.class);
         DespesaResponse response = mock(DespesaResponse.class);
 
+        when(despesa.getTime()).thenReturn(mock(Time.class));
         when(despesaRepository.findById(despesaId)).thenReturn(Optional.of(despesa));
         when(despesaRepository.save(despesa)).thenReturn(despesa);
         when(despesaMapper.toResponse(despesa)).thenReturn(response);
@@ -184,6 +190,7 @@ class DespesaServiceTest {
     @Test
     void delete_DeveDeletarDespesa_QuandoDespesaExiste() {
         Despesa despesa = mock(Despesa.class);
+        when(despesa.getTime()).thenReturn(mock(Time.class));
         when(despesaRepository.findById(despesaId)).thenReturn(Optional.of(despesa));
 
         despesaService.delete(despesaId);

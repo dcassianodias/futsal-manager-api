@@ -5,9 +5,12 @@ import com.futsalmanager.api.dto.response.UsuarioResponse;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import com.futsalmanager.domain.entities.Time;
+import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,8 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -24,6 +30,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -52,6 +59,7 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
     private UsuarioRepository usuarioRepository;
 
     private UUID timeId;
+    private Time time;
     private UsuarioCreateRequest createRequest;
 
     @BeforeEach
@@ -60,16 +68,47 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
         timeRepository.deleteAll();
 
         // Criar um time para os testes
-        Time time = new Time(null, "Time para Postgres", BigDecimal.valueOf(50.00), true, null, null);
+        time = new Time(null, "Time para Postgres", BigDecimal.valueOf(50.00), true, null, null);
         time = timeRepository.save(time);
         timeId = time.getId();
+
+        autenticarComo(time, PerfilUsuario.ADMIN);
 
         createRequest = new UsuarioCreateRequest(
             timeId,
             "Maria Silva",
             "maria@email.com",
-            "senha123"
+            "senha123",
+            null
         );
+    }
+
+    private Authentication currentAuth;
+
+    /**
+     * Troca qual usuário fica autenticado nas próximas chamadas ao MockMvc
+     * (use junto com auth(), aplicado em cada .perform(...)).
+     */
+    private void autenticarComo(Time time, PerfilUsuario perfil) {
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setNome("Usuário de Teste");
+        usuario.setEmail("teste-auth@email.com");
+        usuario.setSenha("senha");
+        usuario.setPerfil(perfil);
+        usuario.setAtivo(true);
+        usuario.setTime(time);
+
+        currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+    }
+
+    /**
+     * RequestPostProcessor que injeta o usuário autenticado atual na
+     * requisição - setar o SecurityContextHolder direto não sobrevive
+     * ao SecurityContextHolderFilter entre chamadas separadas do MockMvc.
+     */
+    private RequestPostProcessor auth() {
+        return request -> authentication(currentAuth).postProcessRequest(request);
     }
 
     @Test
@@ -80,6 +119,7 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             post("/api/usuario/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", notNullValue()))
@@ -103,18 +143,20 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
         mockMvc.perform(
             delete("/api/usuario/v1/{id}", created.id())
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
         )
         .andExpect(status().isNoContent());
 
         // Verificar que foi desativado
         var usuarioOpt = usuarioRepository.findById(created.id());
         assertThat(usuarioOpt).isPresent();
-        assertThat(usuarioOpt.get().getAtivo()).isFalse();
+        assertThat(usuarioOpt.get().isAtivo()).isFalse();
 
         // Reativar
         mockMvc.perform(
             patch("/api/usuario/v1/{id}/reativar", created.id())
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ativo", is(true)));
@@ -130,7 +172,8 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             timeId,
             "Outro João",
             "joao@email.com",
-            "senha456"
+            "senha456",
+            null
         );
 
         String json = objectMapper.writeValueAsString(request2);
@@ -138,6 +181,7 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             post("/api/usuario/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isBadRequest());
 
@@ -158,21 +202,30 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             outroTime.getId(),
             "João do Outro Time",
             "usuario2@email.com",
-            "senha789"
+            "senha789",
+            null
         );
+
+        // precisa estar autenticado como admin do outro time para criar usuário nele
+        autenticarComo(outroTime, PerfilUsuario.ADMIN);
 
         String json = objectMapper.writeValueAsString(request2);
         mockMvc.perform(
             post("/api/usuario/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated());
+
+        // volta a autenticar como admin do time original para consultar
+        autenticarComo(time, PerfilUsuario.ADMIN);
 
         // Buscar usuários por time
         mockMvc.perform(
             get("/api/usuario/v1/time/{timeId}", timeId)
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
@@ -201,6 +254,7 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             post("/api/usuario/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated())
         .andReturn();
@@ -214,7 +268,8 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             timeId,
             "Usuario Teste",
             email,
-            "senha123"
+            "senha123",
+            null
         );
 
         String json = objectMapper.writeValueAsString(request);
@@ -223,6 +278,7 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
             post("/api/usuario/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
+                .with(auth())
         )
         .andExpect(status().isCreated())
         .andReturn();

@@ -11,6 +11,7 @@ import com.futsalmanager.domain.entities.Evento;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.infrastructure.repositories.EventoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,9 @@ class EventoServiceTest {
     @Mock
     private EventoValidator validator;
 
+    @Mock
+    private AuthenticatedUserProvider authenticatedUserProvider;
+
     @InjectMocks
     private EventoService eventoService;
 
@@ -58,6 +62,7 @@ class EventoServiceTest {
         Evento evento = mock(Evento.class);
         EventoResponse response = mock(EventoResponse.class);
 
+        when(evento.getTime()).thenReturn(mock(Time.class));
         when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(evento));
         when(eventoMapper.toResponse(evento)).thenReturn(response);
 
@@ -157,6 +162,7 @@ class EventoServiceTest {
         Evento evento = mock(Evento.class);
         EventoResponse response = mock(EventoResponse.class);
 
+        when(evento.getTime()).thenReturn(mock(Time.class));
         when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(evento));
         when(eventoRepository.save(evento)).thenReturn(evento);
         when(eventoMapper.toResponse(evento)).thenReturn(response);
@@ -186,6 +192,7 @@ class EventoServiceTest {
     void desativar_DeveDesativarEvento_QuandoEventoAtivo() {
         Evento evento = mock(Evento.class);
         when(evento.getAtivo()).thenReturn(true);
+        when(evento.getTime()).thenReturn(mock(Time.class));
         when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(evento));
         when(eventoRepository.save(evento)).thenReturn(evento);
 
@@ -200,6 +207,7 @@ class EventoServiceTest {
     void desativar_DeveLancarBusinessException_QuandoEventoJaInativo() {
         Evento evento = mock(Evento.class);
         when(evento.getAtivo()).thenReturn(false);
+        when(evento.getTime()).thenReturn(mock(Time.class));
         when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(evento));
 
         assertThatThrownBy(() -> eventoService.desativar(eventoId))
@@ -214,6 +222,7 @@ class EventoServiceTest {
     void ativar_DeveAtivarEvento_QuandoEventoInativo() {
         Evento evento = mock(Evento.class);
         when(evento.getAtivo()).thenReturn(false);
+        when(evento.getTime()).thenReturn(mock(Time.class));
         when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(evento));
         when(eventoRepository.save(evento)).thenReturn(evento);
 
@@ -228,6 +237,7 @@ class EventoServiceTest {
     void ativar_DeveLancarBusinessException_QuandoEventoJaAtivo() {
         Evento evento = mock(Evento.class);
         when(evento.getAtivo()).thenReturn(true);
+        when(evento.getTime()).thenReturn(mock(Time.class));
         when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(evento));
 
         assertThatThrownBy(() -> eventoService.ativar(eventoId))

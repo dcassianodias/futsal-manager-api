@@ -12,12 +12,14 @@ import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,12 +47,19 @@ class UsuarioServiceTest {
     @Mock
     private UsuarioValidator validator;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private AuthenticatedUserProvider authenticatedUserProvider;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
     private UUID usuarioId;
     private UUID timeId;
     private Usuario usuario;
+    private Usuario adminLogado;
     private Time time;
     private UsuarioResponse usuarioResponse;
     private UsuarioCreateRequest createRequest;
@@ -62,6 +71,11 @@ class UsuarioServiceTest {
         timeId = UUID.randomUUID();
 
         time = new Time(timeId, "Time Teste", null, true, LocalDateTime.now(), LocalDateTime.now());
+
+        adminLogado = new Usuario();
+        adminLogado.setId(UUID.randomUUID());
+        adminLogado.setPerfil(PerfilUsuario.ADMIN);
+        adminLogado.setTime(time);
 
         usuario = new Usuario();
         usuario.setId(usuarioId);
@@ -81,6 +95,7 @@ class UsuarioServiceTest {
             timeId,
             PerfilUsuario.ATLETA,
             true,
+            0,
             LocalDateTime.now(),
             LocalDateTime.now()
         );
@@ -89,14 +104,18 @@ class UsuarioServiceTest {
             timeId,
             "João Silva",
             "joao@email.com",
-            "123456"
+            "123456",
+            null
         );
 
         updateRequest = new UsuarioUpdateRequest(
             "João Silva Atualizado",
             "joao.atualizado@email.com",
-            "654321"
+            "654321",
+            null
         );
+
+        lenient().when(passwordEncoder.encode(anyString())).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
@@ -241,7 +260,7 @@ class UsuarioServiceTest {
         verify(usuarioRepository).findByTimeIdAndEmail(timeId, "joao@email.com");
         verify(usuarioRepository).save(usuarioExistente);
         verify(usuarioMapper).toResponse(usuarioExistente);
-        assertThat(usuarioExistente.getAtivo()).isTrue();
+        assertThat(usuarioExistente.isAtivo()).isTrue();
         assertThat(usuarioExistente.getNome()).isEqualTo("João Silva");
         assertThat(usuarioExistente.getSenha()).isEqualTo("123456");
     }
@@ -296,6 +315,7 @@ class UsuarioServiceTest {
     @Test
     void update_DeveAtualizarUsuario_QuandoDadosValidos() {
         // Arrange
+        when(authenticatedUserProvider.getUsuarioAutenticado()).thenReturn(adminLogado);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
         when(usuarioMapper.toResponse(usuario)).thenReturn(usuarioResponse);
@@ -320,8 +340,9 @@ class UsuarioServiceTest {
     @Test
     void update_DeveAtualizarUsuario_SomenteCamposFornecidos() {
         // Arrange
-        UsuarioUpdateRequest partialUpdate = new UsuarioUpdateRequest("Novo Nome", null, null);
+        UsuarioUpdateRequest partialUpdate = new UsuarioUpdateRequest("Novo Nome", null, null, null);
 
+        when(authenticatedUserProvider.getUsuarioAutenticado()).thenReturn(adminLogado);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
         when(usuarioMapper.toResponse(usuario)).thenReturn(usuarioResponse);
@@ -369,7 +390,7 @@ class UsuarioServiceTest {
         // Assert
         verify(usuarioRepository).findById(usuarioId);
         verify(usuarioRepository).save(usuario);
-        assertThat(usuario.getAtivo()).isFalse();
+        assertThat(usuario.isAtivo()).isFalse();
     }
 
     @Test
@@ -402,7 +423,7 @@ class UsuarioServiceTest {
         verify(usuarioRepository).findById(usuarioId);
         verify(usuarioRepository).save(usuario);
         verify(usuarioMapper).toResponse(usuario);
-        assertThat(usuario.getAtivo()).isTrue();
+        assertThat(usuario.isAtivo()).isTrue();
     }
 
     @Test
