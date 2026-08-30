@@ -20,6 +20,14 @@ public class PlatformOwnerGuard {
         if (ownerEmail == null || ownerEmail.isBlank()) {
             return false;
         }
-        return ownerEmail.equalsIgnoreCase(authenticatedUserProvider.getUsuarioAutenticado().getEmail());
+        String emailLogado = authenticatedUserProvider.getUsuarioAutenticado().getEmail();
+        return ownerEmail.trim().equalsIgnoreCase(emailLogado == null ? null : emailLogado.trim());
+    }
+
+    public String debug() {
+        String emailLogado = authenticatedUserProvider.getUsuarioAutenticado().getEmail();
+        return "ownerEmailConfigurado=[" + ownerEmail + "] (tamanho=" + (ownerEmail == null ? 0 : ownerEmail.length()) + ") | "
+                + "emailLogado=[" + emailLogado + "] (tamanho=" + (emailLogado == null ? 0 : emailLogado.length()) + ") | "
+                + "souDono=" + isOwner();
     }
 }

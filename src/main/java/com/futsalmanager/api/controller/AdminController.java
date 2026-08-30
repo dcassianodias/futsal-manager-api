@@ -2,6 +2,7 @@ package com.futsalmanager.api.controller;
 
 import com.futsalmanager.api.dto.response.PlatformStatsResponse;
 import com.futsalmanager.application.services.PlatformStatsService;
+import com.futsalmanager.security.service.PlatformOwnerGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
@@ -16,9 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
     private final PlatformStatsService platformStatsService;
+    private final PlatformOwnerGuard platformOwnerGuard;
 
-    public AdminController(PlatformStatsService platformStatsService) {
+    public AdminController(PlatformStatsService platformStatsService, PlatformOwnerGuard platformOwnerGuard) {
         this.platformStatsService = platformStatsService;
+        this.platformOwnerGuard = platformOwnerGuard;
+    }
+
+    @GetMapping("/whoami")
+    @Operation(summary = "Diagnóstico: mostra o que o servidor está comparando para liberar acesso de dono")
+    public String whoami() {
+        return platformOwnerGuard.debug();
     }
 
     @PreAuthorize("@platformOwnerGuard.isOwner()")
