@@ -2,9 +2,11 @@ package com.futsalmanager.config;
 
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +23,7 @@ public class DataInitializer {
     CommandLineRunner init(
             TimeRepository timeRepository,
             UsuarioRepository usuarioRepository,
+            UsuarioTimeRepository usuarioTimeRepository,
             PasswordEncoder passwordEncoder) {
 
         return args -> {
@@ -41,16 +44,22 @@ public class DataInitializer {
 
             Usuario usuario = new Usuario();
 
-            usuario.setTime(time);
             usuario.setNome("Administrador");
             usuario.setEmail("admin@futsal.com");
             usuario.setSenha(
                     passwordEncoder.encode("123456")
             );
-            usuario.setPerfil(PerfilUsuario.ADMIN);
             usuario.setAtivo(true);
 
-            usuarioRepository.save(usuario);
+            usuario = usuarioRepository.save(usuario);
+
+            UsuarioTime vinculo = new UsuarioTime();
+            vinculo.setUsuario(usuario);
+            vinculo.setTime(time);
+            vinculo.setPerfil(PerfilUsuario.ADMIN);
+            vinculo.setAtivo(true);
+
+            usuarioTimeRepository.save(vinculo);
         };
     }
 }

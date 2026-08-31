@@ -1,19 +1,15 @@
 package com.futsalmanager.domain.entities;
 
-import com.futsalmanager.domain.enums.PerfilUsuario;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,10 +22,6 @@ public class Usuario implements UserDetails {
     @UuidGenerator
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "time_id", nullable = false)
-    private Time time;
-
     @Column(nullable = false, length = 150)
     private String nome;
 
@@ -38,11 +30,6 @@ public class Usuario implements UserDetails {
 
     @Column(nullable = false, length = 255)
     private String senha;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private PerfilUsuario perfil;
 
     @Column(nullable = false)
     private boolean ativo;
@@ -69,14 +56,6 @@ public class Usuario implements UserDetails {
         this.id = id;
     }
 
-    public Time getTime() {
-        return time;
-    }
-
-    public void setTime(Time time) {
-        this.time = time;
-    }
-
     public String getNome() {
         return nome;
     }
@@ -99,14 +78,6 @@ public class Usuario implements UserDetails {
 
     public void setSenha(String senha) {
         this.senha = senha;
-    }
-
-    public PerfilUsuario getPerfil() {
-        return perfil;
-    }
-
-    public void setPerfil(PerfilUsuario perfil) {
-        this.perfil = perfil;
     }
 
     public boolean isAtivo() { return ativo; }
@@ -156,9 +127,10 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(
-                new SimpleGrantedAuthority(perfil.getRole())
-        );
+        // Papel (ADMIN/ATLETA) agora é por vínculo de time (UsuarioTime), não mais um
+        // fato único do usuário — autorização de admin é resolvida por time via
+        // AuthenticatedUserProvider.validarAdminDoTime(timeId), não por authority do JWT.
+        return Collections.emptyList();
     }
 
     @Override

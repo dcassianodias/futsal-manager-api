@@ -1,22 +1,23 @@
 package com.futsalmanager.api.controller;
 
-import com.futsalmanager.api.dto.request.UsuarioCreateRequest;
-import com.futsalmanager.api.dto.response.UsuarioResponse;
+import com.futsalmanager.api.dto.request.AddMembroRequest;
+import com.futsalmanager.api.dto.request.AlterarPerfilMembroRequest;
+import com.futsalmanager.api.dto.response.MembroResponse;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -35,11 +36,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Testes de integração com PostgreSQL via TestContainers para Usuario.
- * Testa persistência real e comportamento com banco de dados.
+ * Testes de integração com PostgreSQL via TestContainers para o vínculo
+ * usuário<->time (UsuarioTimeController), incluindo persistência real do
+ * reaproveitamento de identidade por email e das regras de admin único.
  *
  * NOTA: Requer Docker instalado e em execução.
- * Se Docker não estiver disponível, estes testes serão ignorados.
  */
 @AutoConfigureMockMvc
 @Transactional
@@ -58,103 +59,208 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    private UUID timeId;
+    @Autowired
+    private UsuarioTimeRepository usuarioTimeRepository;
+
     private Time time;
-    private UsuarioCreateRequest createRequest;
+    private Usuario admin;
+    private Authentication currentAuth;
 
     @BeforeEach
     void setUp() {
+        usuarioTimeRepository.deleteAll();
         usuarioRepository.deleteAll();
         timeRepository.deleteAll();
 
-        // Criar um time para os testes
         time = new Time(null, "Time para Postgres", BigDecimal.valueOf(50.00), true, null, null);
         time = timeRepository.save(time);
-        timeId = time.getId();
 
-        autenticarComo(time, PerfilUsuario.ADMIN);
+        admin = criarUsuarioPersistido("admin@email.com", "Admin do Time");
+        vincular(admin, time, PerfilUsuario.ADMIN);
 
-        createRequest = new UsuarioCreateRequest(
-            timeId,
-            "Maria Silva",
-            "maria@email.com",
-            "senha123",
-            null
-        );
+        autenticarComo(admin);
     }
 
-    private Authentication currentAuth;
-
-    /**
-     * Troca qual usuário fica autenticado nas próximas chamadas ao MockMvc
-     * (use junto com auth(), aplicado em cada .perform(...)).
-     */
-    private void autenticarComo(Time time, PerfilUsuario perfil) {
+    private Usuario criarUsuarioPersistido(String email, String nome) {
         Usuario usuario = new Usuario();
-        usuario.setId(UUID.randomUUID());
-        usuario.setNome("Usuário de Teste");
-        usuario.setEmail("teste-auth@email.com");
-        usuario.setSenha("senha");
-        usuario.setPerfil(perfil);
+        usuario.setNome(nome);
+        usuario.setEmail(email);
+        usuario.setSenha("senha-hash");
         usuario.setAtivo(true);
-        usuario.setTime(time);
+        usuario.setGols(0);
+        return usuarioRepository.save(usuario);
+    }
 
+    private UsuarioTime vincular(Usuario usuario, Time time, PerfilUsuario perfil) {
+        UsuarioTime vinculo = new UsuarioTime();
+        vinculo.setUsuario(usuario);
+        vinculo.setTime(time);
+        vinculo.setPerfil(perfil);
+        vinculo.setAtivo(true);
+        return usuarioTimeRepository.save(vinculo);
+    }
+
+    private void autenticarComo(Usuario usuario) {
         currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
     }
 
-    /**
-     * RequestPostProcessor que injeta o usuário autenticado atual na
-     * requisição - setar o SecurityContextHolder direto não sobrevive
-     * ao SecurityContextHolderFilter entre chamadas separadas do MockMvc.
-     */
     private RequestPostProcessor auth() {
         return request -> authentication(currentAuth).postProcessRequest(request);
     }
 
     @Test
-    void create_DevePersistirUsuarioNoPostgreSQL() throws Exception {
-        String json = objectMapper.writeValueAsString(createRequest);
+    void addMembro_DeveCriarNovaIdentidade_QuandoEmailNaoExiste() throws Exception {
+        AddMembroRequest request = new AddMembroRequest(
+            "maria@email.com", "Maria Silva", "senha123", PerfilUsuario.ATLETA
+        );
 
-        MvcResult result = mockMvc.perform(
-            post("/api/usuario/v1")
+        String json = objectMapper.writeValueAsString(request);
+
+        mockMvc.perform(
+            post("/api/time/{timeId}/membros", time.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
                 .with(auth())
         )
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id", notNullValue()))
+        .andExpect(jsonPath("$.usuarioId", notNullValue()))
         .andExpect(jsonPath("$.nome", is("Maria Silva")))
-        .andReturn();
+        .andExpect(jsonPath("$.perfil", is("ATLETA")));
 
-        String response = result.getResponse().getContentAsString();
-        UsuarioResponse usuarioResponse = objectMapper.readValue(response, UsuarioResponse.class);
-
-        // Verificar persistência no PostgreSQL
-        assertThat(usuarioRepository.findById(usuarioResponse.id())).isPresent();
-        assertThat(usuarioRepository.count()).isEqualTo(1);
+        assertThat(usuarioRepository.findByEmail("maria@email.com")).isPresent();
+        assertThat(usuarioTimeRepository.findByTimeIdAndAtivoTrue(time.getId())).hasSize(2);
     }
 
     @Test
-    void reativacao_DeveManterHistoricoNoPostgreSQL() throws Exception {
-        // Criar usuário
-        UsuarioResponse created = criarUsuario();
+    void addMembro_DeveReaproveitarIdentidadeExistente_QuandoEmailJaCadastrado() throws Exception {
+        Usuario existente = criarUsuarioPersistido("pessoa@email.com", "Pessoa Existente");
 
-        // Desativar
+        AddMembroRequest request = new AddMembroRequest(
+            "pessoa@email.com", null, null, PerfilUsuario.ATLETA
+        );
+
+        String json = objectMapper.writeValueAsString(request);
+
+        MvcResult result = mockMvc.perform(
+            post("/api/time/{timeId}/membros", time.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .with(auth())
+        )
+        .andExpect(status().isCreated())
+        .andReturn();
+
+        MembroResponse membro = objectMapper.readValue(result.getResponse().getContentAsString(), MembroResponse.class);
+
+        assertThat(membro.usuarioId()).isEqualTo(existente.getId());
+        // não cria uma segunda identidade com o mesmo email
+        assertThat(usuarioRepository.findAll()).hasSize(2); // admin + existente
+    }
+
+    @Test
+    void addMembro_DeveRetornarErro_QuandoJaEMembroAtivo() throws Exception {
+        AddMembroRequest request = new AddMembroRequest(
+            admin.getEmail(), null, null, PerfilUsuario.ATLETA
+        );
+
+        String json = objectMapper.writeValueAsString(request);
+
         mockMvc.perform(
-            delete("/api/usuario/v1/{id}", created.id())
+            post("/api/time/{timeId}/membros", time.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .with(auth())
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void findByTimeId_DeveRetornarApenasMembrosDoTime() throws Exception {
+        Time outroTime = timeRepository.save(new Time(null, "Outro Time", BigDecimal.valueOf(75.00), true, null, null));
+        Usuario outraPessoa = criarUsuarioPersistido("outra@email.com", "Outra Pessoa");
+        vincular(outraPessoa, outroTime, PerfilUsuario.ADMIN);
+
+        mockMvc.perform(
+            get("/api/time/{timeId}/membros", time.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].usuarioId", is(admin.getId().toString())));
+    }
+
+    @Test
+    void alterarPerfil_DeveRebaixarAtleta_QuandoNaoEUltimoAdmin() throws Exception {
+        Usuario outroAdmin = criarUsuarioPersistido("outroadmin@email.com", "Outro Admin");
+        UsuarioTime vinculoOutroAdmin = vincular(outroAdmin, time, PerfilUsuario.ADMIN);
+
+        AlterarPerfilMembroRequest request = new AlterarPerfilMembroRequest(PerfilUsuario.ATLETA);
+        String json = objectMapper.writeValueAsString(request);
+
+        mockMvc.perform(
+            patch("/api/time/{timeId}/membros/{membroId}/perfil", time.getId(), vinculoOutroAdmin.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .with(auth())
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.perfil", is("ATLETA")));
+    }
+
+    @Test
+    void alterarPerfil_DeveRecusar_QuandoRebaixaUltimoAdmin() throws Exception {
+        UsuarioTime vinculoAdmin = usuarioTimeRepository.findByUsuarioIdAndTimeId(admin.getId(), time.getId()).orElseThrow();
+
+        AlterarPerfilMembroRequest request = new AlterarPerfilMembroRequest(PerfilUsuario.ATLETA);
+        String json = objectMapper.writeValueAsString(request);
+
+        mockMvc.perform(
+            patch("/api/time/{timeId}/membros/{membroId}/perfil", time.getId(), vinculoAdmin.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .with(auth())
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void removerMembro_DeveRecusar_QuandoRemoveUltimoAdmin() throws Exception {
+        UsuarioTime vinculoAdmin = usuarioTimeRepository.findByUsuarioIdAndTimeId(admin.getId(), time.getId()).orElseThrow();
+
+        mockMvc.perform(
+            delete("/api/time/{timeId}/membros/{membroId}", time.getId(), vinculoAdmin.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void removerEReativarMembro_DeveFuncionar_QuandoNaoEUltimoAdmin() throws Exception {
+        Usuario atleta = criarUsuarioPersistido("atleta@email.com", "Atleta");
+        UsuarioTime vinculoAtleta = vincular(atleta, time, PerfilUsuario.ATLETA);
+
+        mockMvc.perform(
+            delete("/api/time/{timeId}/membros/{membroId}", time.getId(), vinculoAtleta.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .with(auth())
         )
         .andExpect(status().isNoContent());
 
-        // Verificar que foi desativado
-        var usuarioOpt = usuarioRepository.findById(created.id());
-        assertThat(usuarioOpt).isPresent();
-        assertThat(usuarioOpt.get().isAtivo()).isFalse();
+        assertThat(usuarioTimeRepository.findById(vinculoAtleta.getId()).orElseThrow().isAtivo()).isFalse();
 
-        // Reativar
+        // A listagem precisa continuar trazendo o inativo — é dali que a tela oferece "reativar".
         mockMvc.perform(
-            patch("/api/usuario/v1/{id}/reativar", created.id())
+            get("/api/time/{timeId}/membros", time.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[?(@.membroId=='" + vinculoAtleta.getId() + "')].ativo", contains(false)));
+
+        mockMvc.perform(
+            patch("/api/time/{timeId}/membros/{membroId}/reativar", time.getId(), vinculoAtleta.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .with(auth())
         )
@@ -163,128 +269,11 @@ class UsuarioControllerPostgresIntegrationTest extends AbstractTestcontainersTes
     }
 
     @Test
-    void emailUniqueness_DeveEnforcarRestricaoNoBanco() throws Exception {
-        // Criar primeiro usuário
-        criarUsuarioComEmail("joao@email.com");
+    void multiTime_UsuarioDevePermanecerComIdentidadeUnica_AoEntrarEmDoisTimes() throws Exception {
+        Time segundoTime = timeRepository.save(new Time(null, "Segundo Time", BigDecimal.valueOf(30.00), true, null, null));
+        vincular(admin, segundoTime, PerfilUsuario.ATLETA);
 
-        // Tentar criar segundo usuário com mesmo email
-        UsuarioCreateRequest request2 = new UsuarioCreateRequest(
-            timeId,
-            "Outro João",
-            "joao@email.com",
-            "senha456",
-            null
-        );
-
-        String json = objectMapper.writeValueAsString(request2);
-        mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isBadRequest());
-
-        // Verificar que apenas um foi criado
         assertThat(usuarioRepository.findAll()).hasSize(1);
-    }
-
-    @Test
-    void findByTime_DeveRetornarApenasUsuariosDoTime() throws Exception {
-        // Criar outro time
-        Time outroTime = new Time(null, "Outro Time", BigDecimal.valueOf(75.00), true, null, null);
-        outroTime = timeRepository.save(outroTime);
-
-        // Criar usuários em times diferentes
-        criarUsuarioComEmail("usuario1@email.com");
-
-        UsuarioCreateRequest request2 = new UsuarioCreateRequest(
-            outroTime.getId(),
-            "João do Outro Time",
-            "usuario2@email.com",
-            "senha789",
-            null
-        );
-
-        // precisa estar autenticado como admin do outro time para criar usuário nele
-        autenticarComo(outroTime, PerfilUsuario.ADMIN);
-
-        String json = objectMapper.writeValueAsString(request2);
-        mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isCreated());
-
-        // volta a autenticar como admin do time original para consultar
-        autenticarComo(time, PerfilUsuario.ADMIN);
-
-        // Buscar usuários por time
-        mockMvc.perform(
-            get("/api/usuario/v1/time/{timeId}", timeId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(auth())
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].timeId", is(timeId.toString())));
-
-        // Verificar no banco que temos 2 usuários e 2 times
-        assertThat(usuarioRepository.findAll()).hasSize(2);
-        assertThat(timeRepository.findAll()).hasSize(2);
-    }
-
-    @Test
-    void concorrencia_DeveGerenciarMultiplosUsuariosDoMesmoTime() throws Exception {
-        // Criar múltiplos usuários do mesmo time
-        for (int i = 1; i <= 5; i++) {
-            criarUsuarioComEmail("usuario" + i + "@email.com");
-        }
-
-        // Verificar persistência
-        assertThat(usuarioRepository.findAll()).hasSize(5);
-    }
-
-    private UsuarioResponse criarUsuario() throws Exception {
-        String json = objectMapper.writeValueAsString(createRequest);
-
-        MvcResult result = mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isCreated())
-        .andReturn();
-
-        String response = result.getResponse().getContentAsString();
-        return objectMapper.readValue(response, UsuarioResponse.class);
-    }
-
-    private UsuarioResponse criarUsuarioComEmail(String email) throws Exception {
-        UsuarioCreateRequest request = new UsuarioCreateRequest(
-            timeId,
-            "Usuario Teste",
-            email,
-            "senha123",
-            null
-        );
-
-        String json = objectMapper.writeValueAsString(request);
-
-        MvcResult result = mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isCreated())
-        .andReturn();
-
-        String response = result.getResponse().getContentAsString();
-        return objectMapper.readValue(response, UsuarioResponse.class);
+        assertThat(usuarioTimeRepository.findByUsuarioIdAndAtivoTrue(admin.getId())).hasSize(2);
     }
 }
-

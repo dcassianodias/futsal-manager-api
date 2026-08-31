@@ -41,7 +41,7 @@ public class TimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
         if (!platformOwnerGuard.isOwner()) {
-            authenticatedUserProvider.validarAcessoAoTime(id);
+            authenticatedUserProvider.validarMembro(id);
         }
 
         return timeMapper.toResponse(entity);
@@ -72,7 +72,7 @@ public class TimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
         if (!platformOwnerGuard.isOwner()) {
-            authenticatedUserProvider.validarAcessoAoTime(id);
+            authenticatedUserProvider.validarAdminDoTime(id);
         }
 
         timeMapper.updateEntityFromRequest(request, entity);
@@ -102,7 +102,7 @@ public class TimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
         if (!platformOwnerGuard.isOwner()) {
-            authenticatedUserProvider.validarAcessoAoTime(id);
+            authenticatedUserProvider.validarAdminDoTime(id);
         }
 
         if (!entity.getAtivo()) {
@@ -122,7 +122,7 @@ public class TimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + id));
 
         if (!platformOwnerGuard.isOwner()) {
-            authenticatedUserProvider.validarAcessoAoTime(id);
+            authenticatedUserProvider.validarAdminDoTime(id);
         }
 
         if (entity.getAtivo()) {

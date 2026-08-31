@@ -1,6 +1,5 @@
 package com.futsalmanager.api.controller;
 
-import com.futsalmanager.api.dto.request.UsuarioCreateRequest;
 import com.futsalmanager.api.dto.request.UsuarioUpdateRequest;
 import com.futsalmanager.api.dto.response.UsuarioResponse;
 import com.futsalmanager.application.services.UsuarioService;
@@ -16,15 +15,17 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Identidade do usuário (login, nome, e-mail). Gestão de vínculo com time(s) e
+ * perfil (ADMIN/ATLETA) fica em {@link UsuarioTimeController}, sob /api/time/{timeId}/membros.
+ */
 @RestController
 @RequestMapping(value = "/api/usuario/v1", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Usuários", description = "Endpoints para gerenciamento de usuários")
+@Tag(name = "Usuários", description = "Endpoints para gerenciamento de identidade do usuário")
 @ApiResponseCommon
 public class UsuarioController {
 
@@ -57,39 +58,8 @@ public class UsuarioController {
         return service.findAll();
     }
 
-    @GetMapping("/time/{timeId}")
-    @Operation(summary = "Listar usuários por time")
-    @ApiResponse(
-            responseCode = "200",
-            description = "Lista de usuários do time",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = UsuarioResponse.class)))
-    )
-    public List<UsuarioResponse> findByTimeId(@PathVariable UUID timeId){
-        return service.findByTimeId(timeId);
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    @Operation(summary = "Criar novo usuário")
-    @ApiResponse(
-            responseCode = "201",
-            description = "Usuário criado",
-            content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
-    )
-    public ResponseEntity<UsuarioResponse> create(@RequestBody @Valid UsuarioCreateRequest request){
-        UsuarioResponse created = service.create(request);
-
-        URI uri = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(created.id())
-                .toUri();
-
-        return ResponseEntity.created(uri).body(created);
-    }
-
     @PatchMapping("/{id}")
-    @Operation(summary = "Atualizar usuário (o próprio perfil, ou qualquer um do time se for admin)")
+    @Operation(summary = "Atualizar o próprio perfil (nome, e-mail, senha)")
     @ApiResponse(
             responseCode = "200",
             description = "Usuário atualizado",
@@ -98,29 +68,5 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> update(@PathVariable UUID id,
                                                   @RequestBody @Valid UsuarioUpdateRequest request){
         return ResponseEntity.ok(service.update(id, request));
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Desativar usuário (soft delete)")
-    @ApiResponse(
-            responseCode = "204",
-            description = "Usuário desativado"
-    )
-    public ResponseEntity<Void> delete(@PathVariable UUID id){
-        service.delete(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{id}/reativar")
-    @Operation(summary = "Reativar usuário")
-    @ApiResponse(
-            responseCode = "200",
-            description = "Usuário reativado",
-            content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
-    )
-    public ResponseEntity<UsuarioResponse> reativar(@PathVariable UUID id){
-        return ResponseEntity.ok(service.reativar(id));
     }
 }

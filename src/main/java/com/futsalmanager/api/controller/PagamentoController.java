@@ -101,7 +101,6 @@ public class PagamentoController {
         return ResponseEntity.ok(pagamentoService.findPendentesByTime(timeId));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(summary = "Criar novo pagamento")
     @ApiResponse(
@@ -121,7 +120,6 @@ public class PagamentoController {
         return ResponseEntity.created(uri).body(created);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar pagamento")
     @ApiResponse(
@@ -134,7 +132,6 @@ public class PagamentoController {
         return ResponseEntity.ok(pagamentoService.update(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/pagar")
     @Operation(summary = "Marcar pagamento como pago")
     @ApiResponse(
@@ -146,7 +143,6 @@ public class PagamentoController {
         return ResponseEntity.ok(pagamentoService.marcarComoPago(id));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/mensalidades/gerar")
     @Operation(summary = "Gerar mensalidades para o time")
     @ApiResponse(
@@ -158,7 +154,6 @@ public class PagamentoController {
         return ResponseEntity.ok(pagamentoService.gerarMensalidades(request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/cancelar")
     @Operation(summary = "Cancelar pagamento")
     @ApiResponse(

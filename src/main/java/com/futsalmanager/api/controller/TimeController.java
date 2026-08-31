@@ -76,7 +76,6 @@ public class TimeController {
         return ResponseEntity.created(uri).body(created);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar time")
     @ApiResponse(
@@ -101,7 +100,6 @@ public class TimeController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/desativar")
     @Operation(summary = "Desativar time")
     @ApiResponse(
@@ -113,7 +111,6 @@ public class TimeController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/ativar")
     @Operation(summary = "Ativar time")
     @ApiResponse(

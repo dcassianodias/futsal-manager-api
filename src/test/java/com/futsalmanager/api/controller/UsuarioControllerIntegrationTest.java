@@ -1,15 +1,15 @@
 package com.futsalmanager.api.controller;
 
-import com.futsalmanager.api.dto.request.UsuarioCreateRequest;
 import com.futsalmanager.api.dto.request.UsuarioUpdateRequest;
-import com.futsalmanager.api.dto.response.TimeResponse;
 import com.futsalmanager.api.dto.response.UsuarioResponse;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -25,18 +25,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Testes de integração do UsuarioController — agora restrito a identidade
+ * (buscar/listar/atualizar o próprio usuário). Fluxos de vínculo com time
+ * (adicionar/remover/trocar perfil de membro) estão em
+ * {@link UsuarioControllerPostgresIntegrationTest}, contra o
+ * UsuarioTimeController.
+ */
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ExtendWith(DockerAvailableCondition.class)
@@ -56,113 +60,71 @@ class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    private UUID timeId;
-    private UsuarioCreateRequest createRequest;
+    @Autowired
+    private UsuarioTimeRepository usuarioTimeRepository;
 
+    private Time time;
+    private Usuario usuarioLogado;
     private Authentication currentAuth;
 
     @BeforeEach
     void setUp() {
+        usuarioTimeRepository.deleteAll();
         usuarioRepository.deleteAll();
         timeRepository.deleteAll();
 
-        // Criar um time para ser usado nos testes
-        Time time = new Time(null, "Time Teste", BigDecimal.valueOf(50.00), true, null, null);
+        time = new Time(null, "Time Teste", BigDecimal.valueOf(50.00), true, null, null);
         time = timeRepository.save(time);
-        timeId = time.getId();
 
-        autenticarComoAdmin(time);
+        usuarioLogado = criarUsuarioPersistido("joao@email.com", "João Silva");
+        vincular(usuarioLogado, time, PerfilUsuario.ADMIN);
 
-        createRequest = new UsuarioCreateRequest(
-            timeId,
-            "João Silva",
-            "joao@email.com",
-            "123456",
-            null
-        );
+        autenticarComo(usuarioLogado);
     }
 
     @AfterEach
     void tearDown() {
+        usuarioTimeRepository.deleteAll();
         usuarioRepository.deleteAll();
         timeRepository.deleteAll();
     }
 
-    /**
-     * Troca qual usuário fica autenticado nas próximas chamadas ao MockMvc
-     * (use junto com auth(), aplicado em cada .perform(...)). Não precisa
-     * persistir esse usuário, nada relê o principal a partir do banco.
-     */
-    private void autenticarComoAdmin(Time time) {
+    private Usuario criarUsuarioPersistido(String email, String nome) {
         Usuario usuario = new Usuario();
-        usuario.setId(UUID.randomUUID());
-        usuario.setNome("Usuário de Teste");
-        usuario.setEmail("teste-auth@email.com");
-        usuario.setSenha("senha");
-        usuario.setPerfil(PerfilUsuario.ADMIN);
+        usuario.setNome(nome);
+        usuario.setEmail(email);
+        usuario.setSenha("senha-hash");
         usuario.setAtivo(true);
-        usuario.setTime(time);
+        usuario.setGols(0);
+        return usuarioRepository.save(usuario);
+    }
 
+    private void vincular(Usuario usuario, Time time, PerfilUsuario perfil) {
+        UsuarioTime vinculo = new UsuarioTime();
+        vinculo.setUsuario(usuario);
+        vinculo.setTime(time);
+        vinculo.setPerfil(perfil);
+        vinculo.setAtivo(true);
+        usuarioTimeRepository.save(vinculo);
+    }
+
+    private void autenticarComo(Usuario usuario) {
         currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
     }
 
-    private void autenticarComoDono() {
-        Usuario dono = new Usuario();
-        dono.setId(UUID.randomUUID());
-        dono.setNome("Dono da Plataforma");
-        dono.setEmail("dono-teste@integration.com");
-        dono.setSenha("senha");
-        dono.setPerfil(PerfilUsuario.ADMIN);
-        dono.setAtivo(true);
-        dono.setTime(new Time(UUID.randomUUID(), null, null, null, null, null));
-
-        currentAuth = new UsernamePasswordAuthenticationToken(dono, null, dono.getAuthorities());
-    }
-
-    /**
-     * RequestPostProcessor que injeta o usuário autenticado atual na
-     * requisição - setar o SecurityContextHolder direto não sobrevive
-     * ao SecurityContextHolderFilter entre chamadas separadas do MockMvc.
-     */
-    private RequestPostProcessor auth() {
+    private org.springframework.test.web.servlet.request.RequestPostProcessor auth() {
         return request -> authentication(currentAuth).postProcessRequest(request);
     }
 
     @Test
-    void create_DeveCriarUsuario_ComDadosValidos() throws Exception {
-        String json = objectMapper.writeValueAsString(createRequest);
-
-        MvcResult result = mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id", notNullValue()))
-        .andExpect(jsonPath("$.nome", is("João Silva")))
-        .andExpect(jsonPath("$.email", is("joao@email.com")))
-        .andExpect(jsonPath("$.ativo", is(true)))
-        .andReturn();
-
-        String response = result.getResponse().getContentAsString();
-        UsuarioResponse usuarioResponse = objectMapper.readValue(response, UsuarioResponse.class);
-
-        assertThat(usuarioResponse.id()).isNotNull();
-        assertThat(usuarioRepository.count()).isEqualTo(1);
-    }
-
-    @Test
     void findById_DeveRetornarUsuario_QuandoExiste() throws Exception {
-        UsuarioResponse created = criarUsuario();
-
         mockMvc.perform(
-            get("/api/usuario/v1/{id}", created.id())
+            get("/api/usuario/v1/{id}", usuarioLogado.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .with(auth())
         )
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is(created.id().toString())))
+        .andExpect(jsonPath("$.id", is(usuarioLogado.getId().toString())))
         .andExpect(jsonPath("$.nome", is("João Silva")))
         .andExpect(jsonPath("$.ativo", is(true)));
     }
@@ -180,10 +142,21 @@ class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
     }
 
     @Test
-    void findAll_DeveRetornarTodosUsuariosAtivos() throws Exception {
-        criarUsuarioComEmail("joao1@email.com");
-        criarUsuarioComEmail("joao2@email.com");
-        autenticarComoDono();
+    void findAll_DeveSerNegado_QuandoNaoForDonoDaPlataforma() throws Exception {
+        mockMvc.perform(
+            get("/api/usuario/v1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(auth())
+        )
+        .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void findAll_DeveRetornarTodosUsuariosAtivos_QuandoDonoDaPlataforma() throws Exception {
+        criarUsuarioPersistido("outro@email.com", "Outro Usuário");
+
+        Usuario dono = criarUsuarioPersistido("dono-teste@integration.com", "Dono da Plataforma");
+        autenticarComo(dono);
 
         mockMvc.perform(
             get("/api/usuario/v1")
@@ -191,40 +164,21 @@ class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
                 .with(auth())
         )
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(2)))
-        .andExpect(jsonPath("$[0].nome", is("João Silva")))
-        .andExpect(jsonPath("$[1].nome", is("João Silva")));
+        .andExpect(jsonPath("$", hasSize(3)));
     }
 
     @Test
-    void findByTimeId_DeveRetornarUsuariosDoTime() throws Exception {
-        criarUsuario();
-
-        mockMvc.perform(
-            get("/api/usuario/v1/time/{timeId}", timeId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(auth())
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].timeId", is(timeId.toString())));
-    }
-
-    @Test
-    void update_DeveAtualizarUsuario_ComDadosValidos() throws Exception {
-        UsuarioResponse created = criarUsuario();
-
+    void update_DeveAtualizarOProprioPerfil_ComDadosValidos() throws Exception {
         UsuarioUpdateRequest updateRequest = new UsuarioUpdateRequest(
             "João Silva Atualizado",
             "joao.novo@email.com",
-            "654321",
-            null
+            "654321"
         );
 
         String json = objectMapper.writeValueAsString(updateRequest);
 
         mockMvc.perform(
-            patch("/api/usuario/v1/{id}", created.id())
+            patch("/api/usuario/v1/{id}", usuarioLogado.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
                 .with(auth())
@@ -235,130 +189,18 @@ class UsuarioControllerIntegrationTest extends AbstractTestcontainersTest {
     }
 
     @Test
-    void delete_DeveDesativarUsuario() throws Exception {
-        UsuarioResponse created = criarUsuario();
+    void update_DeveSerNegado_QuandoTentaEditarOutroUsuario() throws Exception {
+        Usuario outro = criarUsuarioPersistido("outro2@email.com", "Outro Usuário");
+
+        UsuarioUpdateRequest updateRequest = new UsuarioUpdateRequest("Hackeado", null, null);
+        String json = objectMapper.writeValueAsString(updateRequest);
 
         mockMvc.perform(
-            delete("/api/usuario/v1/{id}", created.id())
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(auth())
-        )
-        .andExpect(status().isNoContent());
-
-        mockMvc.perform(
-            get("/api/usuario/v1/{id}", created.id())
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(auth())
-        )
-        .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void reativar_DeveReativarUsuario_QuandoDesativado() throws Exception {
-        UsuarioResponse created = criarUsuario();
-
-        // Desativar
-        mockMvc.perform(
-            delete("/api/usuario/v1/{id}", created.id())
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(auth())
-        )
-        .andExpect(status().isNoContent());
-
-        // Reativar
-        mockMvc.perform(
-            patch("/api/usuario/v1/{id}/reativar", created.id())
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(auth())
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.ativo", is(true)));
-    }
-
-    @Test
-    void create_DeveRetornarErro400_QuandoDadosInvalidos() throws Exception {
-        UsuarioCreateRequest invalidRequest = new UsuarioCreateRequest(
-            UUID.randomUUID(),
-            "", // Nome vazio
-            "email-invalido", // Email inválido
-            "123", // Senha muito curta
-            null
-        );
-
-        String json = objectMapper.writeValueAsString(invalidRequest);
-
-        mockMvc.perform(
-            post("/api/usuario/v1")
+            patch("/api/usuario/v1/{id}", outro.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
                 .with(auth())
         )
-        .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void create_DeveRetornarErro400_QuandoTimeNaoExiste() throws Exception {
-        UUID timeInexistente = UUID.randomUUID();
-        // autentica como admin desse time (que não existe no banco) para
-        // passar da checagem de tenant e chegar na checagem de existência
-        autenticarComoAdmin(new Time(timeInexistente, null, null, null, null, null));
-
-        UsuarioCreateRequest requestComTimeInvalido = new UsuarioCreateRequest(
-            timeInexistente,
-            "João Silva",
-            "joao@email.com",
-            "123456",
-            null
-        );
-
-        String json = objectMapper.writeValueAsString(requestComTimeInvalido);
-
-        mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isNotFound());
-    }
-
-    private UsuarioResponse criarUsuario() throws Exception {
-        String json = objectMapper.writeValueAsString(createRequest);
-
-        MvcResult result = mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isCreated())
-        .andReturn();
-
-        String response = result.getResponse().getContentAsString();
-        return objectMapper.readValue(response, UsuarioResponse.class);
-    }
-
-    private UsuarioResponse criarUsuarioComEmail(String email) throws Exception {
-        UsuarioCreateRequest request = new UsuarioCreateRequest(
-            timeId,
-            "João Silva",
-            email,
-            "123456",
-            null
-        );
-
-        String json = objectMapper.writeValueAsString(request);
-
-        MvcResult result = mockMvc.perform(
-            post("/api/usuario/v1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-                .with(auth())
-        )
-        .andExpect(status().isCreated())
-        .andReturn();
-
-        String response = result.getResponse().getContentAsString();
-        return objectMapper.readValue(response, UsuarioResponse.class);
+        .andExpect(status().isForbidden());
     }
 }

@@ -78,7 +78,6 @@ public class EventoController {
         return ResponseEntity.ok(list);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Criar novo evento",
@@ -101,7 +100,6 @@ public class EventoController {
         return ResponseEntity.created(uri).body(created);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(
             summary = "Atualizar evento",
@@ -116,7 +114,6 @@ public class EventoController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/desativar")
     @Operation(
             summary = "Desativar evento",
@@ -131,7 +128,6 @@ public class EventoController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/ativar")
     @Operation(
             summary = "Ativar evento",

@@ -1,6 +1,5 @@
 package com.futsalmanager.application.validators;
 
-import com.futsalmanager.api.dto.request.UsuarioCreateRequest;
 import com.futsalmanager.api.dto.request.UsuarioUpdateRequest;
 import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.domain.entities.Usuario;
@@ -16,18 +15,6 @@ public class UsuarioValidator {
         this.repository = repository;
     }
 
-    public void validarCreate(UsuarioCreateRequest request) {
-
-        String email = request.email().toLowerCase();
-
-        if (repository.existsByTimeIdAndEmailAndAtivoTrue(
-                request.timeId(),
-                email
-        )) {
-            throw new BusinessException("Já existe um usuário ativo com esse email no time.");
-        }
-    }
-
     public void validarUpdate(Usuario entity, UsuarioUpdateRequest request) {
         validarCamposObrigatoriosUpdate(request);
         validarEmailDuplicadoUpdate(entity, request);
@@ -41,14 +28,10 @@ public class UsuarioValidator {
         String email = request.email().toLowerCase();
 
         if (!entity.getEmail().equals(email)) {
-            boolean exists = repository.existsByTimeIdAndEmailAndIdNotAndAtivoTrue(
-                    entity.getTime().getId(),
-                    email,
-                    entity.getId()
-            );
+            boolean exists = repository.existsByEmailAndIdNot(email, entity.getId());
 
             if (exists) {
-                throw new BusinessException("Já existe outro usuário com esse email no time.");
+                throw new BusinessException("Já existe outro usuário com esse email.");
             }
         }
     }

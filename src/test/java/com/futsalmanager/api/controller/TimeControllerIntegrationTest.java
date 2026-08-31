@@ -5,8 +5,11 @@ import com.futsalmanager.api.dto.request.TimeUpdateRequest;
 import com.futsalmanager.api.dto.response.TimeResponse;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,6 +54,12 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
     @Autowired
     private TimeRepository timeRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UsuarioTimeRepository usuarioTimeRepository;
+
     private UUID timeId;
 
     private TimeCreateRequest createRequest;
@@ -59,6 +68,8 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
 
     @BeforeEach
     void setUp() {
+        usuarioTimeRepository.deleteAll();
+        usuarioRepository.deleteAll();
         timeRepository.deleteAll();
 
         createRequest = new TimeCreateRequest(
@@ -66,53 +77,56 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
             BigDecimal.valueOf(75.50)
         );
 
-        autenticarComoTime(UUID.randomUUID());
+        // TimeService.create não exige vínculo prévio, então basta um usuário
+        // autenticado qualquer, sem membership em nenhum time ainda.
+        autenticarComoUsuarioSemVinculo();
     }
 
     @AfterEach
     void tearDown() {
+        usuarioTimeRepository.deleteAll();
+        usuarioRepository.deleteAll();
         timeRepository.deleteAll();
     }
 
-    /**
-     * Troca qual usuário fica autenticado nas próximas chamadas ao MockMvc
-     * (use junto com auth(), aplicado em cada .perform(...)). O time não
-     * precisa existir no banco - nada relê o principal a partir dele.
-     */
-    private void autenticarComoTime(UUID timeId) {
-        Time time = new Time(timeId, null, null, null, null, null);
+    private Usuario persistirUsuario(String email) {
         Usuario usuario = new Usuario();
-        usuario.setId(UUID.randomUUID());
         usuario.setNome("Usuário de Teste");
-        usuario.setEmail("teste-auth@email.com");
-        usuario.setSenha("senha");
-        usuario.setPerfil(PerfilUsuario.ADMIN);
+        usuario.setEmail(email);
+        usuario.setSenha("senha-hash");
         usuario.setAtivo(true);
-        usuario.setTime(time);
+        usuario.setGols(0);
+        return usuarioRepository.save(usuario);
+    }
+
+    private void autenticarComoUsuarioSemVinculo() {
+        Usuario usuario = persistirUsuario("teste-auth-" + UUID.randomUUID() + "@email.com");
+        currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+    }
+
+    /** Persiste um usuário com vínculo ADMIN ativo no time informado e autentica como ele. */
+    private void autenticarComoAdminDoTime(UUID timeId) {
+        Usuario usuario = persistirUsuario("admin-" + UUID.randomUUID() + "@email.com");
+
+        Time time = timeRepository.findById(timeId)
+            .orElseGet(() -> new Time(timeId, null, null, null, null, null));
+
+        UsuarioTime vinculo = new UsuarioTime();
+        vinculo.setUsuario(usuario);
+        vinculo.setTime(time);
+        vinculo.setPerfil(PerfilUsuario.ADMIN);
+        vinculo.setAtivo(true);
+        usuarioTimeRepository.save(vinculo);
 
         currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
     }
 
     /** Autentica como o dono da plataforma (configurado via app.platform-owner-email). */
     private void autenticarComoDono() {
-        Time time = new Time(UUID.randomUUID(), null, null, null, null, null);
-        Usuario dono = new Usuario();
-        dono.setId(UUID.randomUUID());
-        dono.setNome("Dono da Plataforma");
-        dono.setEmail("dono-teste@integration.com");
-        dono.setSenha("senha");
-        dono.setPerfil(PerfilUsuario.ADMIN);
-        dono.setAtivo(true);
-        dono.setTime(time);
-
+        Usuario dono = persistirUsuario("dono-teste@integration.com");
         currentAuth = new UsernamePasswordAuthenticationToken(dono, null, dono.getAuthorities());
     }
 
-    /**
-     * RequestPostProcessor que injeta o usuário autenticado atual na
-     * requisição - setar o SecurityContextHolder direto não sobrevive
-     * ao SecurityContextHolderFilter entre chamadas separadas do MockMvc.
-     */
     private RequestPostProcessor auth() {
         return request -> authentication(currentAuth).postProcessRequest(request);
     }
@@ -145,7 +159,7 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
     @Test
     void findById_DeveRetornarTime_QuandoExiste() throws Exception {
         TimeResponse created = criarTime();
-        autenticarComoTime(created.id());
+        autenticarComoAdminDoTime(created.id());
 
         mockMvc.perform(
             get("/api/time/v1/{id}", created.id())
@@ -190,7 +204,7 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
     @Test
     void update_DeveAtualizarTime_ComDadosValidos() throws Exception {
         TimeResponse created = criarTime();
-        autenticarComoTime(created.id());
+        autenticarComoAdminDoTime(created.id());
 
         TimeUpdateRequest updateRequest = new TimeUpdateRequest(
             "Time Atualizado",
@@ -214,7 +228,7 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
     @Test
     void desativar_DeveDesativarTime() throws Exception {
         TimeResponse created = criarTime();
-        autenticarComoTime(created.id());
+        autenticarComoAdminDoTime(created.id());
 
         mockMvc.perform(
             patch("/api/time/v1/{id}/desativar", created.id())
@@ -235,7 +249,7 @@ class TimeControllerIntegrationTest extends AbstractTestcontainersTest {
     @Test
     void ativar_DeveAtivarTime_QuandoDesativado() throws Exception {
         TimeResponse created = criarTime();
-        autenticarComoTime(created.id());
+        autenticarComoAdminDoTime(created.id());
 
         // Desativar
         mockMvc.perform(

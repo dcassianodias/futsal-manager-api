@@ -43,7 +43,7 @@ public class EventoService {
     public EventoResponse findById(UUID id) {
         Evento entity = eventoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarMembro(entity.getTime().getId());
         return eventoMapper.toResponse(entity);
     }
 
@@ -55,14 +55,14 @@ public class EventoService {
 
     @Transactional(readOnly = true)
     public List<EventoResponse> findByTime(UUID timeId){
-        authenticatedUserProvider.validarAcessoAoTime(timeId);
+        authenticatedUserProvider.validarMembro(timeId);
         List<Evento> list = eventoRepository.findByTimeIdOrderByDataInicioDesc(timeId);
         return eventoMapper.toResponseList(list);
     }
 
     @Transactional
     public EventoResponse create(EventoCreateRequest request){
-        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
+        authenticatedUserProvider.validarAdminDoTime(request.timeId());
         validator.validarCreate(request);
 
         Time time = timeRepository.findById(request.timeId())
@@ -82,7 +82,7 @@ public class EventoService {
     public EventoResponse update(UUID id, EventoUpdateRequest request) {
         Evento entity = eventoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
 
         validator.validarUpdate(request);
 
@@ -97,7 +97,7 @@ public class EventoService {
 
     public void desativar(UUID id) {
         Evento evento = buscarOuErro(id);
-        authenticatedUserProvider.validarAcessoAoTime(evento.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(evento.getTime().getId());
 
         if (!evento.getAtivo()) {
             throw new BusinessException("Evento já está inativo");
@@ -113,7 +113,7 @@ public class EventoService {
 
     public void ativar(UUID id) {
         Evento evento = buscarOuErro(id);
-        authenticatedUserProvider.validarAcessoAoTime(evento.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(evento.getTime().getId());
 
         if (evento.getAtivo()) {
             throw new BusinessException("Evento já está ativo");

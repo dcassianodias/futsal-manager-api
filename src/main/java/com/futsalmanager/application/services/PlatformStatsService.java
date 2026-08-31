@@ -8,6 +8,7 @@ import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.PagamentoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +17,16 @@ public class PlatformStatsService {
 
     private final TimeRepository timeRepository;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioTimeRepository usuarioTimeRepository;
     private final JogoRepository jogoRepository;
     private final PagamentoRepository pagamentoRepository;
 
     public PlatformStatsService(TimeRepository timeRepository, UsuarioRepository usuarioRepository,
+                                UsuarioTimeRepository usuarioTimeRepository,
                                 JogoRepository jogoRepository, PagamentoRepository pagamentoRepository) {
         this.timeRepository = timeRepository;
         this.usuarioRepository = usuarioRepository;
+        this.usuarioTimeRepository = usuarioTimeRepository;
         this.jogoRepository = jogoRepository;
         this.pagamentoRepository = pagamentoRepository;
     }
@@ -34,8 +38,8 @@ public class PlatformStatsService {
                 timeRepository.countByAtivoTrue(),
                 usuarioRepository.count(),
                 usuarioRepository.countByAtivoTrue(),
-                usuarioRepository.countByPerfilAndAtivoTrue(PerfilUsuario.ADMIN),
-                usuarioRepository.countByPerfilAndAtivoTrue(PerfilUsuario.ATLETA),
+                usuarioTimeRepository.countByPerfilAndAtivoTrue(PerfilUsuario.ADMIN),
+                usuarioTimeRepository.countByPerfilAndAtivoTrue(PerfilUsuario.ATLETA),
                 jogoRepository.count(),
                 jogoRepository.countByStatusJogo(StatusJogo.AGENDADO),
                 jogoRepository.countByStatusJogo(StatusJogo.FINALIZADO),

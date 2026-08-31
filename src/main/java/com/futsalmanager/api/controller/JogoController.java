@@ -70,7 +70,6 @@ public class JogoController {
         return ResponseEntity.ok(list); // 🔥 sempre 200
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(summary = "Criar novo jogo")
     @ApiResponse(
@@ -90,7 +89,6 @@ public class JogoController {
         return ResponseEntity.created(uri).body(created);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar jogo")
     @ApiResponse(
@@ -103,7 +101,6 @@ public class JogoController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/finalizar")
     @Operation(summary = "Finalizar jogo com placar e artilheiros")
     @ApiResponse(
@@ -116,7 +113,6 @@ public class JogoController {
         return ResponseEntity.ok(service.finalizar(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/cancelar")
     @Operation(summary = "Cancelar jogo")
     @ApiResponse(

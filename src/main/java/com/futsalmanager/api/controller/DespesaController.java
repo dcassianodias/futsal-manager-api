@@ -79,7 +79,6 @@ public class DespesaController {
         return ResponseEntity.ok(list);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Criar nova despesa",
@@ -102,7 +101,6 @@ public class DespesaController {
         return ResponseEntity.created(uri).body(created);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(
             summary = "Atualizar despesa",
@@ -118,7 +116,20 @@ public class DespesaController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/pagar")
+    @Operation(
+            summary = "Marcar despesa como paga",
+            description = "Marca uma despesa pendente como paga. Retorna a despesa atualizada."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Despesa marcada como paga",
+            content = @Content(schema = @Schema(implementation = DespesaResponse.class))
+    )
+    public ResponseEntity<DespesaResponse> marcarComoPago(@PathVariable UUID id){
+        return ResponseEntity.ok(service.marcarComoPago(id));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir despesa",
             description = "Exclui uma despesa existente pelo seu ID. Retorna status 204 No Content em caso de sucesso."

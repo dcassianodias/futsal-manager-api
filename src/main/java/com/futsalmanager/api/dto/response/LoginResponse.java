@@ -1,5 +1,6 @@
 package com.futsalmanager.api.dto.response;
 
+import java.util.List;
 import java.util.UUID;
 
 public record LoginResponse(
@@ -10,8 +11,6 @@ public record LoginResponse(
         UUID usuarioId,
         String nome,
         String email,
-        String perfil,
-        UUID timeId,
-        String timeNome
+        List<MembroTimeResponse> times
 ) {
 }
