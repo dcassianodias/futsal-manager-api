@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plano Estratégico — Futsal Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13pt; line-height: 1.7; color: #1a1a2e; background: #fff; }
+
+    .cover {
+      min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f3020 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 60px 40px; page-break-after: always;
+    }
+    .cover .badge { background: #22c55e; color: #fff; font-size: 10pt; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; padding: 6px 20px; border-radius: 20px; margin-bottom: 32px; }
+    .cover h1 { font-size: 42pt; color: #fff; font-weight: 900; line-height: 1.1; margin-bottom: 16px; }
+    .cover h1 span { color: #22c55e; }
+    .cover .sub { font-size: 16pt; color: #94a3b8; margin-bottom: 48px; max-width: 600px; }
+    .cover .meta { color: #64748b; font-size: 10pt; margin-top: 60px; }
+    .cover .meta strong { color: #94a3b8; }
+    .stat-hero { display:flex; gap:40px; margin:40px 0; flex-wrap:wrap; justify-content:center; }
+    .stat-hero-item { text-align:center; }
+    .stat-hero-item .v { font-size:32pt; font-weight:900; color:#22c55e; }
+    .stat-hero-item .l { color:#94a3b8; font-size:9pt; }
+
+    .page { max-width: 900px; margin: 0 auto; padding: 60px 60px; }
+    .section-break { page-break-before: always; }
+
+    .section-header { background: linear-gradient(90deg, #0f172a, #1e3a5f); color: #fff; padding: 24px 36px; border-radius: 12px; margin-bottom: 36px; display: flex; align-items: center; gap: 16px; }
+    .section-header .num { background: #22c55e; color: #fff; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18pt; font-weight: 900; flex-shrink: 0; }
+    .section-header h2 { font-size: 20pt; font-weight: 800; }
+    .section-header p { font-size: 10pt; color: #94a3b8; margin-top: 4px; }
+
+    h3 { font-size: 15pt; color: #0f172a; font-weight: 700; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 3px solid #22c55e; }
+    h4 { font-size: 12pt; color: #1e3a5f; font-weight: 700; margin: 24px 0 8px; }
+    p { margin-bottom: 14px; }
+    ul, ol { margin: 0 0 14px 24px; }
+    li { margin-bottom: 6px; }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin: 24px 0; }
+    .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; }
+    .card .card-icon { font-size: 28pt; margin-bottom: 10px; }
+    .card h4 { margin: 0 0 8px; font-size: 12pt; }
+    .card p { font-size: 10pt; margin: 0; color: #64748b; }
+    .card.green { border-left: 4px solid #22c55e; }
+    .card.blue  { border-left: 4px solid #3b82f6; }
+    .card.amber { border-left: 4px solid #f59e0b; }
+    .card.red   { border-left: 4px solid #ef4444; }
+    .card.purple{ border-left: 4px solid #8b5cf6; }
+
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10pt; }
+    th { background: #0f172a; color: #fff; padding: 10px 12px; text-align: left; font-weight: 700; }
+    td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr:nth-child(even) td { background: #f8fafc; }
+
+    .tag-sim  { background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:8px; font-size:9pt; font-weight:700; white-space:nowrap; }
+    .tag-nao  { background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:8px; font-size:9pt; font-weight:700; white-space:nowrap; }
+    .tag-parc { background:#fef9c3; color:#92400e; padding:2px 8px; border-radius:8px; font-size:9pt; font-weight:700; white-space:nowrap; }
+
+    .callout { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #22c55e; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+    .callout.blue  { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #3b82f6; }
+    .callout.amber { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #f59e0b; }
+    .callout h4 { margin: 0 0 8px; font-size: 11pt; }
+
+    .phase { border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; margin: 28px 0; }
+    .phase-header { padding: 18px 24px; display: flex; align-items: center; gap: 16px; }
+    .phase-header.green  { background: #dcfce7; }
+    .phase-header.blue   { background: #dbeafe; }
+    .phase-header.amber  { background: #fef3c7; }
+    .phase-header.purple { background: #ede9fe; }
+    .phase-header.red    { background: #fee2e2; }
+    .phase-num { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20pt; font-weight: 900; flex-shrink: 0; }
+    .phase-num.green  { background: #22c55e; color: #fff; }
+    .phase-num.blue   { background: #3b82f6; color: #fff; }
+    .phase-num.amber  { background: #f59e0b; color: #fff; }
+    .phase-num.purple { background: #8b5cf6; color: #fff; }
+    .phase-num.red    { background: #ef4444; color: #fff; }
+    .phase-title { font-size: 14pt; font-weight: 800; }
+    .phase-sub   { font-size: 9pt; color: #64748b; }
+    .phase-body  { padding: 20px 24px; }
+    .phase-body ul { margin-left: 20px; }
+    .phase-body li { margin-bottom: 8px; font-size: 11pt; }
+
+    hr { border: none; border-top: 2px solid #e2e8f0; margin: 40px 0; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+    .stat-box { text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 12px; }
+    .stat-box .val { font-size: 20pt; font-weight: 900; color: #22c55e; }
+    .stat-box .lbl { font-size: 9pt; color: #64748b; margin-top: 4px; }
+
+    .toc { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px 32px; margin-bottom: 40px; }
+    .toc h3 { border: none; margin-top: 0; margin-bottom: 16px; }
+    .toc ol { margin-left: 20px; }
+    .toc li { margin-bottom: 8px; color: #1e3a5f; font-size: 11pt; }
+
+    .competitor-card { border: 1px solid #e2e8f0; border-radius: 12px; margin: 20px 0; overflow: hidden; }
+    .competitor-header { background: #0f172a; color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .competitor-header h4 { color: #fff; margin: 0; font-size: 13pt; }
+    .competitor-body { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .pros h5 { color: #15803d; margin-bottom: 6px; font-size: 10pt; }
+    .cons h5 { color: #b91c1c; margin-bottom: 6px; font-size: 10pt; }
+    .pros li, .cons li { font-size: 10pt; margin-bottom: 4px; }
+
+    .opp-block { background: linear-gradient(135deg, #0f172a, #1e3a5f); color: #fff; border-radius: 16px; padding: 28px 32px; margin: 24px 0; }
+    .opp-block h4 { color: #22c55e; margin-bottom: 12px; font-size: 14pt; }
+    .opp-block ul { margin-left: 20px; }
+    .opp-block li { margin-bottom: 10px; color: #cbd5e1; }
+    .opp-block li strong { color: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- CAPA -->
+<div class="cover">
+  <div class="badge">Documento Estrategico Confidencial</div>
+  <h1><span>Futsal</span> Manager</h1>
+  <p class="sub">Plano para criar a maior plataforma de futsal amador do Brasil — analise competitiva, roadmap de produto e estrategia de monetizacao</p>
+  <div class="stat-hero">
+    <div class="stat-hero-item"><div class="v">12M+</div><div class="l">praticantes de futsal no Brasil</div></div>
+    <div class="stat-hero-item"><div class="v">$200B</div><div class="l">mercado global de sporttech em 2025</div></div>
+    <div class="stat-hero-item"><div class="v">0</div><div class="l">plataformas all-in-one existem hoje</div></div>
+  </div>
+  <div class="meta">Preparado por <strong>Danilo Cassiano Dias</strong> &nbsp;|&nbsp; Junho de 2026 &nbsp;|&nbsp; Versao 1.0</div>
+</div>
+
+<!-- SUMARIO -->
+<div class="page">
+  <div class="toc">
+    <h3>Sumario Executivo</h3>
+    <ol>
+      <li>Estado Atual do Projeto — o que ja esta construido</li>
+      <li>Analise de Mercado — tamanho e oportunidade</li>
+      <li>Analise Competitiva — o que existe e onde falha</li>
+      <li>As 7 Lacunas do Mercado — onde ninguem esta</li>
+      <li>Posicionamento Estrategico — como nos diferenciamos</li>
+      <li>Roadmap de Produto — 5 fases de execucao</li>
+      <li>Estrategia de Aquisicao — como crescer rapido</li>
+      <li>Modelo de Monetizacao — como ganhar dinheiro</li>
+      <li>Estrategia de Patrocinio — como atrair marcas</li>
+      <li>Proximos Passos — o que fazer nos proximos 90 dias</li>
+    </ol>
+  </div>
+
+<!-- SECAO 1 — ESTADO ATUAL -->
+  <div class="section-header">
+    <div class="num">1</div>
+    <div>
+      <h2>Estado Atual do Projeto</h2>
+      <p>O que ja esta construido e qual e a base tecnologica disponivel</p>
+    </div>
+  </div>
+
+  <p>O <strong>Futsal Manager</strong> e uma aplicacao full-stack moderna, robusta e ja preparada para escalar como SaaS multi-tenant desde o primeiro dia. Isso e uma vantagem enorme — concorrentes como o iFut levaram anos reescrevendo o sistema ao crescer.</p>
+
+  <h3>Stack Tecnologica</h3>
+  <div class="card-grid">
+    <div class="card green">
+      <div class="card-icon">&#9881;&#65039;</div>
+      <h4>Backend — Java 21 + Spring Boot 3</h4>
+      <p>API REST com Spring Security (JWT), Spring Data JPA, PostgreSQL, Flyway migrations. Arquitetura em camadas limpa e desacoplada.</p>
+    </div>
+    <div class="card blue">
+      <div class="card-icon">&#128187;</div>
+      <h4>Frontend — Angular 19 PWA</h4>
+      <p>Standalone Components, Lazy Loading. Instalavel como app nativo sem App Store. Funciona offline. Roda em qualquer celular.</p>
+    </div>
+    <div class="card amber">
+      <div class="card-icon">&#128451;&#65039;</div>
+      <h4>Banco — PostgreSQL + Flyway</h4>
+      <p>UUID como PK, multi-tenant via time_id em todas as entidades. Migracoes versionadas. Pronto para escalar com milhares de times.</p>
+    </div>
+    <div class="card purple">
+      <div class="card-icon">&#128274;</div>
+      <h4>Seguranca — JWT + Perfis</h4>
+      <p>ADMIN e ATLETA como perfis distintos. Todas as queries filtradas por time_id do usuario autenticado. CORS configurado.</p>
+    </div>
+  </div>
+
+  <h3>Funcionalidades Implementadas vs. Pendentes</h3>
+  <table>
+    <tr><th>Modulo</th><th>Funcionalidade</th><th>Status</th></tr>
+    <tr><td>Times</td><td>CRUD completo, pagina publica por codigo unico, desativacao</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Atletas</td><td>CRUD, perfis ADMIN/ATLETA, filtro por status, deteccao de duplicata</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Jogos</td><td>Agendamento, finalizacao com placar e artilheiros, cancelamento</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Pagamentos</td><td>Mensalidades, eventos vinculados, geracao em lote, resumo financeiro</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Despesas</td><td>Registro por categoria, resumo mensal e total geral</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Eventos</td><td>Criacao com data, valor sugerido, ativar/desativar</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Dashboard</td><td>Estatisticas em tempo real (jogos, jogadores, pagamentos, despesas)</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>PWA</td><td>Instalavel na tela inicial, funcionamento offline</td><td><span class="tag-sim">Pronto</span></td></tr>
+    <tr><td>Autenticacao</td><td>Login com email/senha, token JWT, protecao de rotas</td><td><span class="tag-parc">Em andamento</span></td></tr>
+    <tr><td>Auto-cadastro</td><td>Time se registra sozinho na plataforma (onboarding self-service)</td><td><span class="tag-nao">Pendente</span></td></tr>
+    <tr><td>Confirmacao de presenca</td><td>Atleta confirma/recusa presenca em jogos pelo celular</td><td><span class="tag-nao">Pendente</span></td></tr>
+    <tr><td>Notificacoes Push</td><td>Lembrete de jogo, resultado, cobranca via Firebase PWA</td><td><span class="tag-nao">Pendente</span></td></tr>
+    <tr><td>Campeonatos</td><td>Torneios multi-times, tabelas, chaveamento, sumula digital</td><td><span class="tag-nao">Pendente</span></td></tr>
+    <tr><td>Pagamento Online</td><td>Pix integrado, cobranca de mensalidade, taxa de inscricao</td><td><span class="tag-nao">Pendente</span></td></tr>
+    <tr><td>Card de Resultado</td><td>Imagem automatica para compartilhar no WhatsApp e Instagram</td><td><span class="tag-nao">Pendente</span></td></tr>
+  </table>
+
+  <div class="callout blue">
+    <h4>Vantagem Tecnica Decisiva</h4>
+    <p>A arquitetura multi-tenant com <strong>time_id</strong> ja implementada em todas as entidades significa que a plataforma pode atender milhares de times simultaneamente no mesmo banco de dados sem reescrever uma linha de codigo. Isso custaria meses de trabalho nos concorrentes que nao pensaram nisso desde o inicio.</p>
+  </div>
+
+<!-- SECAO 2 — MERCADO -->
+  <div class="section-header section-break">
+    <div class="num">2</div>
+    <div>
+      <h2>Analise de Mercado</h2>
+      <p>O tamanho do oceano que estamos prestes a navegar</p>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box"><div class="val">12M+</div><div class="lbl">Praticantes de futsal no Brasil</div></div>
+    <div class="stat-box"><div class="val">13M</div><div class="lbl">Jogadores de futebol amador</div></div>
+    <div class="stat-box"><div class="val">$200B</div><div class="lbl">Mercado global de sporttech (2025)</div></div>
+    <div class="stat-box"><div class="val">$805M</div><div class="lbl">Investido em sportechs no Brasil (2018-22)</div></div>
+  </div>
+
+  <p>O Brasil e o maior pais praticante de futebol/futsal do mundo em volume de jogadores. O futsal e um dos 4 esportes mais praticados ha decadas, com mais de 267 mil atletas federados e estimativa de 13 mil times organizados — numero que cresceu substancialmente com a digitalizacao pos-pandemia.</p>
+
+  <p>Mesmo com esse mercado gigante, a digitalizacao do esporte amador ainda e extremamente primitiva. A maioria dos times ainda organiza tudo pelo WhatsApp e planilhas do Google. <strong>Essa e exatamente a janela de oportunidade.</strong></p>
+
+  <h3>Por que o Momento e Agora</h3>
+  <div class="card-grid">
+    <div class="card green">
+      <h4>Copa do Mundo 2026</h4>
+      <p>O Brasil co-sedia a Copa 2026. O interesse por futebol e futsal vai explodir. Marcas esportivas estao buscando ativamente canais para alcançar o publico amador com investimentos crescentes.</p>
+    </div>
+    <div class="card blue">
+      <h4>Digitalizacao Pos-Pandemia</h4>
+      <p>A pandemia forcou times amadores a buscar solucoes digitais. O habito de gerenciar grupos online foi criado. Agora e so oferecer uma ferramenta melhor que o WhatsApp.</p>
+    </div>
+    <div class="card amber">
+      <h4>PIX Consolidado</h4>
+      <p>O Pix democratizou pagamentos instantaneos. Cobrar mensalidade online agora e trivial. Isso abre a porta para o modulo financeiro como diferencial central.</p>
+    </div>
+    <div class="card purple">
+      <h4>PWA sem App Store</h4>
+      <p>Com PWA, o atleta instala a plataforma no celular sem precisar ir a App Store. Remove a principal barreira de adocao de aplicativos esportivos no Brasil.</p>
+    </div>
+  </div>
+
+<!-- SECAO 3 — COMPETIDORES -->
+  <div class="section-header section-break">
+    <div class="num">3</div>
+    <div>
+      <h2>Analise Competitiva</h2>
+      <p>O que existe, o que funciona e onde todos estao falhando</p>
+    </div>
+  </div>
+
+  <p>Foram analisadas 9 plataformas ativas no mercado brasileiro. A conclusao e clara: <strong>cada plataforma resolve apenas uma parte do problema</strong>. Nenhuma e all-in-one. Esse e o espaco que vamos ocupar.</p>
+
+  <div class="competitor-card">
+    <div class="competitor-header">
+      <div><h4>iFut — ifut.com.br</h4><div style="color:#94a3b8;font-size:9pt;">Lider atual de mercado em torneiros</div></div>
+      <div style="text-align:right;"><div style="color:#22c55e;font-size:16pt;font-weight:900;">74k</div><div style="color:#94a3b8;font-size:9pt;">atletas ativos / R$300/mes</div></div>
+    </div>
+    <div class="competitor-body">
+      <div class="pros">
+        <h5>PONTOS FORTES</h5>
+        <ul>
+          <li>Maior base (74k atletas, 5.5k organizadores)</li>
+          <li>Cobertura nacional — todos os estados</li>
+          <li>Investimento formal (marca Penalty como parceira)</li>
+          <li>White label para grandes campeonatos</li>
+          <li>Gamificacao para engajamento</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>LACUNAS</h5>
+        <ul>
+          <li>Zero modulo financeiro para os times</li>
+          <li>Focado no organizador, nao no atleta</li>
+          <li>Sem gestao de grupos/peladas informais</li>
+          <li>R$300/mes — alto para o amador</li>
+          <li>Sem integracao com WhatsApp</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="competitor-card">
+    <div class="competitor-header">
+      <div><h4>APP Esportivo — appesportivo.com.br</h4><div style="color:#94a3b8;font-size:9pt;">Foco institucional: prefeituras e ligas</div></div>
+      <div style="text-align:right;"><div style="color:#22c55e;font-size:16pt;font-weight:900;">72k</div><div style="color:#94a3b8;font-size:9pt;">usuarios / 500+ organizadores</div></div>
+    </div>
+    <div class="competitor-body">
+      <div class="pros">
+        <h5>PONTOS FORTES</h5>
+        <ul>
+          <li>Prefeituras como clientes (credibilidade)</li>
+          <li>Plataforma madura e estaavel</li>
+          <li>Suporte a multiplas modalidades</li>
+          <li>App nativo iOS e Android</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>LACUNAS</h5>
+        <ul>
+          <li>Zero controle financeiro para os times</li>
+          <li>Sem funcionalidades sociais (conectar atletas)</li>
+          <li>Interface centrada no organizador</li>
+          <li>Preco nao transparente no site</li>
+          <li>Ignora peladas e grupos informais</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="competitor-card">
+    <div class="competitor-header">
+      <div><h4>Timezza — timezza.com.br</h4><div style="color:#94a3b8;font-size:9pt;">Unico com foco real em financeiro de grupos</div></div>
+      <div style="text-align:right;"><div style="color:#64748b;font-size:16pt;font-weight:900;">N/D</div><div style="color:#94a3b8;font-size:9pt;">base nao divulgada / freemium</div></div>
+    </div>
+    <div class="competitor-body">
+      <div class="pros">
+        <h5>PONTOS FORTES</h5>
+        <ul>
+          <li>Controle financeiro completo (mensalidades, caixa)</li>
+          <li>PWA — sem barreira de App Store</li>
+          <li>Gamificacao: artilheiros, rankings, frequencia</li>
+          <li>Confirmacao automatica de presenca</li>
+          <li>Montagem automatica de times equilibrados</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>LACUNAS</h5>
+        <ul>
+          <li>Sem campeonatos formais com tabelas</li>
+          <li>Foco so em peladas — nao serve ligas</li>
+          <li>Precos nao divulgados publicamente</li>
+          <li>Sem conexao entre times (amistosos)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="competitor-card">
+    <div class="competitor-header">
+      <div><h4>FutLiga — futliga.com.br</h4><div style="color:#94a3b8;font-size:9pt;">Social / agendamento com GPS</div></div>
+      <div style="text-align:right;"><div style="color:#64748b;font-size:16pt;font-weight:900;">N/D</div><div style="color:#94a3b8;font-size:9pt;">receita via publicidade local</div></div>
+    </div>
+    <div class="competitor-body">
+      <div class="pros">
+        <h5>PONTOS FORTES</h5>
+        <ul>
+          <li>Notificacao GPS 1h antes do jogo</li>
+          <li>Estatisticas individuais de atletas</li>
+          <li>Acesso a amistosos mesmo sem time fixo</li>
+          <li>Sumula digital completa</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>LACUNAS</h5>
+        <ul>
+          <li>Sem modulo financeiro algum</li>
+          <li>Sem campeonatos formais estruturados</li>
+          <li>Baixa tracao visivel no mercado atual</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3>Demais Plataformas (Analise Rapida)</h3>
+  <table>
+    <tr><th>Plataforma</th><th>Foco</th><th>Financeiro</th><th>Campeonatos</th><th>Peladas</th><th>Preco</th></tr>
+    <tr><td><strong>FutScore</strong></td><td>Estatisticas do time</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-parc">Parcial</span></td><td>~R$14/mes</td></tr>
+    <tr><td><strong>Copa Facil</strong></td><td>Campeonatos multimodal</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td>Freemium</td></tr>
+    <tr><td><strong>JogaMais</strong></td><td>Agendamento simples</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td>Gratis</td></tr>
+    <tr><td><strong>Futebol Cafe</strong></td><td>Campeonatos (desde 2018)</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td>N/D</td></tr>
+    <tr><td><strong>EATLETA</strong></td><td>Nao confirmado</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+  </table>
+
+<!-- SECAO 4 — LACUNAS -->
+  <div class="section-header section-break">
+    <div class="num">4</div>
+    <div>
+      <h2>As 7 Lacunas do Mercado</h2>
+      <p>Onde todos estao falhando e onde vamos dominar</p>
+    </div>
+  </div>
+
+  <div class="opp-block">
+    <h4>A Grande Lacuna: Nenhuma Plataforma e All-in-One</h4>
+    <p style="color:#cbd5e1;margin-bottom:16px;">Nenhuma plataforma hoje une todos esses pilares em um unico produto:</p>
+    <ul>
+      <li><strong>Gestao do time</strong> — atletas, presenca, pagamentos, despesas</li>
+      <li><strong>Gestao de jogos</strong> — agendamento, placar, artilheiros, resultados</li>
+      <li><strong>Campeonatos</strong> — tabelas, chaveamento, inscricao online</li>
+      <li><strong>Social</strong> — descobrir times, marcar amistosos, ranking de jogadores</li>
+      <li><strong>Pagamentos integrados</strong> — Pix, mensalidade, taxa de inscricao</li>
+      <li><strong>Comunicacao</strong> — notificacoes push, integracao WhatsApp</li>
+      <li><strong>Patrocinio</strong> — espaco para marcas locais anunciarem para times</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header green"><div class="phase-num green">1</div>
+      <div><div class="phase-title">Controle Financeiro para Todos os Tipos de Time</div><div class="phase-sub">Nenhuma plataforma de campeonatos tem financeiro. Nenhuma plataforma financeira tem campeonatos.</div></div>
+    </div>
+    <div class="phase-body"><p>O Timezza tem controle financeiro mas so para peladas. O iFut e APP Esportivo tem campeonatos mas zero controle financeiro. <strong>Quem une os dois domina ambos os mercados simultaneamente.</strong></p></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header blue"><div class="phase-num blue">2</div>
+      <div><div class="phase-title">Perfil Portavel do Atleta</div><div class="phase-sub">O atleta nao existe como entidade independente em nenhuma plataforma hoje.</div></div>
+    </div>
+    <div class="phase-body"><p>Hoje o atleta e sempre dependente do time. Precisamos criar um <strong>passaporte do atleta</strong>: perfil individual com historico de gols, jogos, times, estatisticas de carreira. O atleta leva isso para onde for, independente do time.</p></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header amber"><div class="phase-num amber">3</div>
+      <div><div class="phase-title">Integracao com WhatsApp</div><div class="phase-sub">Todo time amador organiza tudo pelo WhatsApp. Nenhuma plataforma aproveita isso.</div></div>
+    </div>
+    <div class="phase-body"><p>Integrar notificacoes via WhatsApp (link direto ou bot) para convocacoes, lembretes de jogo, cobranca de mensalidade e resultados. Usar os grupos ja existentes do usuario como canal de distribuicao organica e crescimento viral.</p></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header purple"><div class="phase-num purple">4</div>
+      <div><div class="phase-title">Pagamento de Taxa de Inscricao Online</div><div class="phase-sub">Nenhuma plataforma processa pagamento de inscricao em torneiros.</div></div>
+    </div>
+    <div class="phase-body"><p>Organizadores cobram taxa de inscricao por time — sempre via Pix manual, sem comprovante, sem controle. Integrar gateway de pagamento (Asaas, Mercado Pago) resolve um problema real e gera comissao para a plataforma em cada transacao.</p></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header green"><div class="phase-num green">5</div>
+      <div><div class="phase-title">Marketplace de Patrocinio Local</div><div class="phase-sub">Nenhuma plataforma monetiza a relacao entre times locais e comercios da vizinhanca.</div></div>
+    </div>
+    <div class="phase-body"><p>Padarias, barbearias, lojas de material esportivo querem aparecer para quem joga bola no bairro. Um <strong>marketplace de patrocinio</strong> onde o comerciante local patrocina times especificos por cidade/bairro e o "Google Ads do esporte amador" — e ninguem fez isso ainda.</p></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header red"><div class="phase-num red">6</div>
+      <div><div class="phase-title">Descoberta de Jogadores Disponiveis</div><div class="phase-sub">O "mercado de transferencias" amador e totalmente invisivel.</div></div>
+    </div>
+    <div class="phase-body"><p>Criar um modulo onde jogadores se declaram "disponivel para jogar" e times podem convida-los. Resolve o problema cronico de times precisando de "um pendurado" para completar a equipe no dia do jogo — algo que acontece em todo grupo de WhatsApp toda semana.</p></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header blue"><div class="phase-num blue">7</div>
+      <div><div class="phase-title">Comunidade e Conteudo (SEO + Engajamento)</div><div class="phase-sub">Nenhuma plataforma cria conteudo em torno do futsal amador.</div></div>
+    </div>
+    <div class="phase-body"><p>Blog com noticias sobre futsal amador, rankings regionais de artilheiros, melhores momentos de campeonatos. Isso gera trafego organico (SEO) e cria uma comunidade alem do produto — como o Sofascore fez para o futebol profissional.</p></div>
+  </div>
+
+<!-- SECAO 5 — POSICIONAMENTO -->
+  <div class="section-header section-break">
+    <div class="num">5</div>
+    <div>
+      <h2>Posicionamento Estrategico</h2>
+      <p>Como nos diferenciamos e por que ganhamos</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h4>Nossa Proposta de Valor Central</h4>
+    <p style="font-size:14pt;font-weight:700;color:#15803d;">"A unica plataforma que cuida do seu time do inicio ao fim: do agendamento da pelada a final do campeonato, com tudo que o admin e o atleta precisam — no celular, sem baixar app."</p>
+  </div>
+
+  <h3>Comparativo Completo de Posicionamento</h3>
+  <table>
+    <tr><th>Funcionalidade</th><th>iFut</th><th>Timezza</th><th>APP Esportivo</th><th>Futsal Manager</th></tr>
+    <tr><td>Gestao de times e atletas</td><td><span class="tag-parc">Parcial</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-parc">Parcial</span></td><td><span class="tag-sim">Sim (pronto)</span></td></tr>
+    <tr><td>Controle financeiro</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (pronto)</span></td></tr>
+    <tr><td>Campeonatos formais</td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-sim">Sim (Fase 3)</span></td></tr>
+    <tr><td>PWA sem App Store</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (pronto)</span></td></tr>
+    <tr><td>Confirmacao de presenca</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (Fase 1)</span></td></tr>
+    <tr><td>Pagamento online (Pix)</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (Fase 4)</span></td></tr>
+    <tr><td>Marketplace de patrocinio</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (Fase 4)</span></td></tr>
+    <tr><td>Integracao WhatsApp</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (Fase 2)</span></td></tr>
+    <tr><td>Perfil portavel do atleta</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (Fase 3)</span></td></tr>
+    <tr><td>Multi-tenant SaaS</td><td><span class="tag-sim">Sim</span></td><td><span class="tag-parc">Parcial</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-sim">Sim (ja arquitetado)</span></td></tr>
+    <tr><td>Plano gratuito generoso</td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim</span></td><td><span class="tag-nao">Nao</span></td><td><span class="tag-sim">Sim (estrategia central)</span></td></tr>
+  </table>
+
+<!-- SECAO 6 — ROADMAP -->
+  <div class="section-header section-break">
+    <div class="num">6</div>
+    <div>
+      <h2>Roadmap de Produto — 5 Fases</h2>
+      <p>Da finalizacao do MVP a lider de mercado nacional</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header green"><div class="phase-num green">0</div>
+      <div><div class="phase-title">Fase 0 — Finalizar o MVP (0 a 60 dias)</div><div class="phase-sub">Objetivo: produto funcional para os primeiros times reais, em producao</div></div>
+    </div>
+    <div class="phase-body">
+      <h4>Backend</h4>
+      <ul>
+        <li>Finalizar autenticacao JWT — login funcionando, senha criptografada</li>
+        <li>Endpoint de auto-cadastro de times (onboarding self-service)</li>
+        <li>Endpoint PATCH /jogos/{id}/presenca (CONFIRMAR / RECUSAR)</li>
+        <li>Endpoint de recuperacao de senha por e-mail (Spring Mail)</li>
+        <li>Rate limiting e protecao contra abuso na API</li>
+      </ul>
+      <h4>Frontend</h4>
+      <ul>
+        <li>Tela de login e logout com JWT</li>
+        <li>Guard Angular protegendo todas as rotas administrativas</li>
+        <li>Interceptor HTTP incluindo token nas requisicoes</li>
+        <li>Tela de cadastro de novo time (onboarding em 3 passos)</li>
+        <li>Tela publica com botao de confirmacao de presenca para o atleta</li>
+        <li>Remover TIME_ID hardcoded — ler do JWT decodificado</li>
+      </ul>
+      <h4>Infraestrutura</h4>
+      <ul>
+        <li>Deploy do backend em Railway ou Render (gratis nos primeiros meses)</li>
+        <li>Deploy do frontend na Vercel (gratis)</li>
+        <li>PostgreSQL gerenciado em Supabase (gratis ate certo volume)</li>
+        <li>Dominio: futsalmanager.com.br ou futsal.app</li>
+        <li>SSL e CORS para producao</li>
+      </ul>
+      <div class="callout amber">
+        <h4>Marco da Fase 0</h4>
+        <p>Ao final: pelo menos 5 times reais (amigos, grupos do WhatsApp) usando a plataforma ativamente. Dados reais valem mais que qualquer funcionalidade adicional.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header blue"><div class="phase-num blue">1</div>
+      <div><div class="phase-title">Fase 1 — Comunidade e Engajamento (60 a 180 dias)</div><div class="phase-sub">Objetivo: 100 times ativos, 1.000 atletas cadastrados, crescimento organico</div></div>
+    </div>
+    <div class="phase-body">
+      <h4>Funcionalidades</h4>
+      <ul>
+        <li><strong>Notificacoes Push (Firebase + PWA)</strong> — lembrete de jogo 2h antes, confirmacao de presenca, resultado pos-jogo</li>
+        <li><strong>Card de resultado automatico</strong> — imagem visual gerada apos cada jogo para compartilhar no WhatsApp e Instagram (marketing viral gratis)</li>
+        <li><strong>Link de convite do time</strong> — admin gera URL magica que abre o PWA ja no time correto (atleta cadastra em 30 segundos)</li>
+        <li><strong>Ranking de frequencia</strong> — gamificacao: quem mais aparece nos jogos sobe no ranking do time</li>
+        <li><strong>Placar ao vivo</strong> — admin atualiza o placar em tempo real; atleta ve na tela publica do time</li>
+        <li><strong>Galeria de fotos por jogo</strong> — upload simples de fotos pos-jogo na pagina publica do time</li>
+        <li><strong>Perfil basico do atleta</strong> — total de gols, jogos, frequencia, times em que passou</li>
+        <li><strong>Login com Google</strong> — reduz a friccao de cadastro de 5 campos para 1 clique</li>
+      </ul>
+      <div class="callout">
+        <h4>Alavanca Viral: O Card de Resultado</h4>
+        <p>Um card visual automatico (placar, artilheiros, logo dos times) gerado apos cada jogo para compartilhar no WhatsApp e marketing gratis e viral. Cada card compartilhado por um atleta expoe a marca Futsal Manager para dezenas de pessoas do grupo, sem custo algum.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header amber"><div class="phase-num amber">2</div>
+      <div><div class="phase-title">Fase 2 — Campeonatos e Ligas (180 a 365 dias)</div><div class="phase-sub">Objetivo: 500 times, primeiros campeonatos formais na plataforma</div></div>
+    </div>
+    <div class="phase-body">
+      <p>Esta e a fase de expansao para alem do time individual. Um torneio com 16 times traz 16 admins e ~240 atletas de uma so vez.</p>
+      <h4>Modulo de Campeonatos</h4>
+      <ul>
+        <li>Criacao de campeonatos: grupos + mata-mata, pontos corridos, chaveamento direto</li>
+        <li>Tabela de classificacao publica — qualquer pessoa acessa sem login</li>
+        <li>Inscricao online de times — time solicita, organizador aprova</li>
+        <li>Geracao automatica de rodadas e tabelas</li>
+        <li>Sumula digital — gols, cartoes amarelos/vermelhos, substituicoes</li>
+        <li>Artilharia do campeonato atualizada em tempo real</li>
+        <li>Suspensoes automaticas por cartoes acumulados</li>
+        <li>Pagina publica do campeonato com URL propria para compartilhar</li>
+        <li>Historico de temporadas — campeoes, vice, artilheiros por edicao</li>
+        <li>Exportacao de sumula em PDF</li>
+        <li>Notificacoes push para todos os atletas de todos os times do campeonato</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header purple"><div class="phase-num purple">3</div>
+      <div><div class="phase-title">Fase 3 — Social e Passaporte do Atleta (365 a 540 dias)</div><div class="phase-sub">Objetivo: 2.000+ times, atleta como entidade central da plataforma</div></div>
+    </div>
+    <div class="phase-body">
+      <h4>Passaporte do Atleta</h4>
+      <ul>
+        <li>Perfil publico com URL propria (ex: futsal.app/@danilo)</li>
+        <li>Historico de carreira: todos os times, campanhas, titulos</li>
+        <li>Estatisticas de carreira: gols, assistencias, jogos, aproveitamento</li>
+        <li>Insignias e conquistas (artilheiro da temporada, 100 jogos, etc.)</li>
+        <li>Status "disponivel para jogar" — atleta se oferece para amistosos</li>
+      </ul>
+      <h4>Comunidade e Descoberta</h4>
+      <ul>
+        <li>Mapa de times e campeonatos por cidade/regiao</li>
+        <li>Feed de resultados da comunidade local</li>
+        <li>Ranking nacional e regional de artilheiros amadores</li>
+        <li>Times marcam amistosos uns com os outros pela plataforma</li>
+        <li>Sistema de avaliacao de campos e arenas pelos atletas</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header red"><div class="phase-num red">4</div>
+      <div><div class="phase-title">Fase 4 — Monetizacao e Escala (540+ dias)</div><div class="phase-sub">Objetivo: Receita recorrente solida + primeiros grandes patrocinadores</div></div>
+    </div>
+    <div class="phase-body">
+      <ul>
+        <li>Integracao Pix via Asaas ou Mercado Pago para cobranca de mensalidades automaticas</li>
+        <li>Pagamento de taxa de inscricao em campeonatos (comissao de 5-10%)</li>
+        <li>Marketplace de patrocinio local self-service (comerciante cria conta e anuncia)</li>
+        <li>Patrocinio de campeonatos por marcas nacionais (naming rights)</li>
+        <li>White label para federacoes e prefeituras</li>
+        <li>Relatorios de mercado vendidos para marcas esportivas</li>
+      </ul>
+    </div>
+  </div>
+
+<!-- SECAO 7 — AQUISICAO -->
+  <div class="section-header section-break">
+    <div class="num">7</div>
+    <div>
+      <h2>Estrategia de Aquisicao</h2>
+      <p>Como crescer rapido usando os canais que voce ja tem</p>
+    </div>
+  </div>
+
+  <h3>Estrategia de Lancamento — Os Primeiros 90 Dias</h3>
+
+  <h4>Semanas 1–2: Seus Grupos do WhatsApp (Canal de Lancamento)</h4>
+  <ul>
+    <li>Cadastre manualmente os 5–10 times que voce ja conhece dos grupos de futsal</li>
+    <li>Mostre pessoalmente ao admin de cada time como usar — videochamada de 15 minutos</li>
+    <li>Crie um grupo de suporte "Futsal Manager Beta" com esses admins para feedback direto</li>
+    <li>Documente os problemas e resolva em tempo real — esses primeiros admins sao seus beta testers</li>
+  </ul>
+
+  <h4>Semanas 3–4: Redes Sociais</h4>
+  <ul>
+    <li>Crie @futsalmanager no Instagram, TikTok e YouTube</li>
+    <li>Primeiro conteudo: demonstracao da plataforma em 60 segundos (Reels/TikTok)</li>
+    <li>Mostre o card de resultado automatico — e o conteudo mais viral possivel</li>
+    <li>Mostre o dashboard financeiro — todo admin de time sente essa dor de controlar mensalidades</li>
+    <li>Reposte os times que usam a plataforma e compartilham os resultados</li>
+  </ul>
+
+  <h4>Mes 2–3: Expansao por Campeonatos</h4>
+  <ul>
+    <li>Identifique 3–5 organizadores de ligas amadoras na sua cidade e ofereça 6 meses gratis</li>
+    <li>Um campeonato de 16 times = 16 novos clientes potenciais automaticamente</li>
+    <li>Contate campos e arenas de futsal — eles tem ligas proprias e precisam de uma plataforma</li>
+    <li>Cada time que participa recebe o link de cadastro gratuito da plataforma</li>
+  </ul>
+
+  <div class="callout">
+    <h4>Tatica de Crescimento Viral: O Link de Convite</h4>
+    <p>Quando o admin compartilha <strong>futsalmanager.com.br/time/MEUTIME</strong> no grupo do WhatsApp para os atletas confirmarem presenca, todos os atletas que abrem o link sao expostos a plataforma. Muitos vao querer ter o mesmo para o time deles. Isso e crescimento boca a boca estruturado — sem gastar um centavo em marketing.</p>
+  </div>
+
+  <h3>Canais de Crescimento por Fase</h3>
+  <table>
+    <tr><th>Canal</th><th>Fase 0–1</th><th>Fase 2</th><th>Fase 3+</th></tr>
+    <tr><td>WhatsApp pessoal</td><td><strong>Principal</strong></td><td>Secundario</td><td>Automatico</td></tr>
+    <tr><td>Instagram / TikTok</td><td>Inicio</td><td><strong>Principal</strong></td><td>Consolidado</td></tr>
+    <tr><td>SEO (paginas publicas)</td><td>Passivo</td><td>Crescendo</td><td><strong>Principal</strong></td></tr>
+    <tr><td>Parceria com arenas</td><td>—</td><td><strong>Principal</strong></td><td>Escalado</td></tr>
+    <tr><td>Marketing pago (Meta Ads)</td><td>—</td><td>Testes</td><td><strong>Principal</strong></td></tr>
+    <tr><td>Prefeituras e ligas oficiais</td><td>—</td><td>Inicio</td><td><strong>Principal</strong></td></tr>
+  </table>
+
+<!-- SECAO 8 — MONETIZACAO -->
+  <div class="section-header section-break">
+    <div class="num">8</div>
+    <div>
+      <h2>Modelo de Monetizacao</h2>
+      <p>Como transformar usuarios em receita recorrente e sustentavel</p>
+    </div>
+  </div>
+
+  <div class="callout blue">
+    <h4>Principio Central</h4>
+    <p>Crescimento primeiro, monetizacao depois. O plano gratuito deve ser bom o suficiente para o time amador simples. O plano pago resolve os problemas dos times mais organizados. <strong>Nunca cobrar por algo que os concorrentes oferecem de graca.</strong></p>
+  </div>
+
+  <h3>Estrutura de Planos — Times e Grupos</h3>
+  <table>
+    <tr><th>Plano</th><th>Preco/mes</th><th>Atletas</th><th>Funcionalidades Extra</th><th>Publico</th></tr>
+    <tr>
+      <td><strong>Gratuito</strong></td>
+      <td>R$ 0</td>
+      <td>Ate 20</td>
+      <td>Gestao basica (jogos, atletas, financeiro manual)</td>
+      <td>Peladas e grupos informais</td>
+    </tr>
+    <tr>
+      <td><strong>Starter</strong></td>
+      <td>R$ 19/mes</td>
+      <td>Ate 35</td>
+      <td>+ Notificacoes push, confirmacao de presenca, galeria de fotos, card de resultado automatico, cobranca Pix</td>
+      <td>Times organizados com mensalidade</td>
+    </tr>
+    <tr>
+      <td><strong>Pro</strong></td>
+      <td>R$ 49/mes</td>
+      <td>Ilimitado</td>
+      <td>+ Relatorios PDF, placar ao vivo, dominio personalizado, multiplos admins, estatisticas avancadas, exportacao de dados</td>
+      <td>Times serios, escolinhas, clubes</td>
+    </tr>
+    <tr>
+      <td><strong>Liga</strong></td>
+      <td>R$ 129/mes</td>
+      <td>Ilimitado</td>
+      <td>+ Gestao de campeonatos multi-times, chaveamento automatico, sumula digital, pagina do campeonato, pagamento de inscricoes integrado</td>
+      <td>Organizadores de torneiros, ligas, arenas, prefeituras</td>
+    </tr>
+  </table>
+
+  <h3>Fontes de Receita (Diversificacao)</h3>
+  <div class="card-grid">
+    <div class="card green"><h4>1. Assinaturas SaaS</h4><p>Receita recorrente mensal dos planos Starter, Pro e Liga. Base previsivel e escalavel.</p></div>
+    <div class="card blue"><h4>2. Comissao em Pagamentos</h4><p>5% sobre taxas de inscricao em campeonatos. 3% sobre mensalidades cobradas via Pix integrado.</p></div>
+    <div class="card amber"><h4>3. Patrocinio Local</h4><p>Comerciante local paga para aparecer na pagina e app dos times do seu bairro. Modelo self-service.</p></div>
+    <div class="card red"><h4>4. Patrocinio de Campeonatos</h4><p>Marcas esportivas pagam naming rights de campeonatos e exposicao nas paginas e notificacoes.</p></div>
+    <div class="card purple"><h4>5. White Label</h4><p>Federacoes e prefeituras pagam para ter a plataforma com marca propria sem logo Futsal Manager.</p></div>
+    <div class="card green"><h4>6. Dados de Mercado</h4><p>Relatorios sobre tendencias do futsal amador por regiao vendidos para marcas esportivas.</p></div>
+  </div>
+
+  <h3>Projecao de Receita Conservadora</h3>
+  <table>
+    <tr><th>Marco</th><th>Times Pagantes</th><th>Ticket Medio</th><th>Receita Mensal (MRR)</th></tr>
+    <tr><td>Mes 3</td><td>20 times</td><td>R$ 25</td><td>R$ 500/mes</td></tr>
+    <tr><td>Mes 6</td><td>80 times</td><td>R$ 30</td><td>R$ 2.400/mes</td></tr>
+    <tr><td>Mes 12</td><td>300 times</td><td>R$ 38</td><td>R$ 11.400/mes</td></tr>
+    <tr><td>Mes 18</td><td>800 times</td><td>R$ 42 + patrocinios</td><td>R$ 40.000/mes</td></tr>
+    <tr><td>Mes 24</td><td>2.000 times</td><td>R$ 50 + patrocinios</td><td>R$ 120.000/mes</td></tr>
+  </table>
+
+<!-- SECAO 9 — PATROCINIO -->
+  <div class="section-header section-break">
+    <div class="num">9</div>
+    <div>
+      <h2>Estrategia de Patrocinio</h2>
+      <p>Como transformar audiencia em receita com marcas parceiras</p>
+    </div>
+  </div>
+
+  <p>O patrocinio no esporte amador e um mercado enorme e completamente inexplorado. Marcas locais, regionais e nacionais querem alcançar quem joga bola — mas nao tem um canal direto para isso. <strong>Nos seremos esse canal.</strong></p>
+
+  <h3>Nivel 1 — Patrocinio Local (Disponivel da Fase 2)</h3>
+  <p>Comerciantes locais pagam para aparecer nos times do bairro. Modelo simples, self-service, sem necessidade de equipe de vendas grande.</p>
+  <table>
+    <tr><th>Formato</th><th>Onde Aparece</th><th>Preco Sugerido</th></tr>
+    <tr><td>Logo no banner do time</td><td>Pagina publica do time, app do atleta</td><td>R$ 50–150/mes por time</td></tr>
+    <tr><td>Destaque no card de resultado</td><td>Card compartilhado no WhatsApp e Instagram pos-jogo</td><td>R$ 100–300/mes por time</td></tr>
+    <tr><td>Notificacao patrocinada</td><td>Push notification antes do jogo ("patrocinado por [Loja]")</td><td>R$ 200/mes por time</td></tr>
+    <tr><td>Pagina do patrocinador</td><td>Perfil publico da empresa com avaliacao dos atletas</td><td>R$ 99–299/mes</td></tr>
+  </table>
+
+  <div class="callout">
+    <h4>O Google Ads do Esporte Amador</h4>
+    <p>Uma padaria no bairro que patrocina os 3 times de futsal locais aparece para ~150 atletas + familias toda semana por R$150/mes — mais barato que um panfleto e com retorno mensuravel. <strong>Esse e o produto que nenhuma plataforma oferece hoje.</strong></p>
+  </div>
+
+  <h3>Nivel 2 — Patrocinio de Campeonatos (Fase 3)</h3>
+  <table>
+    <tr><th>Formato</th><th>O que o Patrocinador Recebe</th><th>Preco</th></tr>
+    <tr><td>Naming rights do campeonato</td><td>"Copa [Marca] de Futsal" — nome em todas as paginas, notificacoes e cards</td><td>R$ 500–2.000/campeonato</td></tr>
+    <tr><td>Logo em todas as sumulas</td><td>Logo impresso nos PDFs de todas as rodadas</td><td>R$ 200–500/campeonato</td></tr>
+    <tr><td>Banner na pagina do campeonato</td><td>Banner fixo com clique para o site do patrocinador</td><td>R$ 300–800/campeonato</td></tr>
+    <tr><td>Notificacoes de rodada</td><td>"Rodada X — patrocinado por [Marca]" em push para todos os atletas</td><td>R$ 100/rodada</td></tr>
+  </table>
+
+  <h3>Nivel 3 — Patrocinio Nacional (Fase 4)</h3>
+  <table>
+    <tr><th>Formato</th><th>Descricao</th><th>Preco Estimado</th></tr>
+    <tr><td>Patrocinio master da plataforma</td><td>Marca em todas as paginas como "Powered by [Marca]"</td><td>R$ 30.000–100.000/ano</td></tr>
+    <tr><td>Copa Nacional Patrocinada</td><td>Criar a "Copa [Marca] Futsal Manager" com times de todo o Brasil</td><td>R$ 50.000–200.000/edicao</td></tr>
+    <tr><td>Relatorio de Mercado Exclusivo</td><td>Dados do futsal amador (perfil, regiao, comportamento)</td><td>R$ 5.000–20.000/relatorio</td></tr>
+  </table>
+
+  <h3>Como Abordar os Primeiros Patrocinadores</h3>
+  <div class="card-grid">
+    <div class="card green"><h4>1. Construa Audiencia Primeiro</h4><p>Patrocinador nao compra promessa, compra audiencia. Chegue com numeros: 100 times, 2.000 atletas, 10.000 sessoes/mes.</p></div>
+    <div class="card blue"><h4>2. Comece com Lojas Locais</h4><p>Arena de futsal, loja de material esportivo, suplementacao, barbearia. Vendas B2B diretas via WhatsApp com proposta de 1 pagina.</p></div>
+    <div class="card amber"><h4>3. Crie Cases de Sucesso</h4><p>Documente resultados dos primeiros patrocinadores: "A Arena X teve 300 visitas extras no mes via Futsal Manager". Use para vender o proximo.</p></div>
+    <div class="card purple"><h4>4. Aborde Marcas Esportivas</h4><p>Com cases e audiencia, contate o marketing de Penalty, Topper, Olympikus via LinkedIn. Copa do Mundo 2026 e o gancho perfeito para o pitch.</p></div>
+  </div>
+
+  <div class="opp-block">
+    <h4>Pitch para Patrocinadores</h4>
+    <ul>
+      <li><strong>12 milhoes de praticantes de futsal</strong> — mais que tenis, natacao e basquete juntos</li>
+      <li><strong>Publico masculino de 18–45 anos</strong> — o mais dificil de alcançar na TV e redes tradicionais</li>
+      <li><strong>Engajamento real</strong> — o atleta usa o app 2–3x por semana antes/depois de cada jogo</li>
+      <li><strong>Contexto esportivo 100%</strong> — completamente relacionado ao produto que voce vende</li>
+      <li><strong>Segmentacao geografica precisa</strong> — voce escolhe os times por bairro, cidade ou estado</li>
+      <li><strong>Metricas transparentes</strong> — impressoes, cliques e engajamento em tempo real</li>
+    </ul>
+  </div>
+
+<!-- SECAO 10 — PROXIMOS PASSOS -->
+  <div class="section-header section-break">
+    <div class="num">10</div>
+    <div>
+      <h2>Proximos Passos — Os 90 Dias Criticos</h2>
+      <p>O plano de acao detalhado para colocar o Futsal Manager em producao</p>
+    </div>
+  </div>
+
+  <h3>Sprint 1 — Semanas 1 a 2: Autenticacao</h3>
+  <table>
+    <tr><th>#</th><th>Tarefa</th><th>Prioridade</th><th>Estimativa</th></tr>
+    <tr><td>1</td><td>Implementar tela de login no Angular com JWT (email + senha)</td><td><span class="tag-sim">CRITICO</span></td><td>2 dias</td></tr>
+    <tr><td>2</td><td>Guard Angular nas rotas administrativas (CanActivate)</td><td><span class="tag-sim">CRITICO</span></td><td>1 dia</td></tr>
+    <tr><td>3</td><td>Interceptor HTTP incluindo token JWT no Authorization header</td><td><span class="tag-sim">CRITICO</span></td><td>1 dia</td></tr>
+    <tr><td>4</td><td>Remover TIME_ID hardcoded — ler do JWT decodificado</td><td><span class="tag-sim">CRITICO</span></td><td>1 dia</td></tr>
+    <tr><td>5</td><td>Endpoint de auto-cadastro de novo time (POST /times/registrar)</td><td><span class="tag-sim">CRITICO</span></td><td>3 dias</td></tr>
+    <tr><td>6</td><td>Tela de onboarding para novo time (3 passos: dados, admin, confirmacao)</td><td><span class="tag-sim">CRITICO</span></td><td>2 dias</td></tr>
+  </table>
+
+  <h3>Sprint 2 — Semanas 3 a 4: Presenca e Deploy</h3>
+  <table>
+    <tr><th>#</th><th>Tarefa</th><th>Prioridade</th><th>Estimativa</th></tr>
+    <tr><td>7</td><td>Endpoint PATCH /jogos/{id}/presenca com status CONFIRMADO/RECUSADO</td><td><span class="tag-sim">ALTA</span></td><td>2 dias</td></tr>
+    <tr><td>8</td><td>Botao de confirmacao de presenca na pagina publica do atleta</td><td><span class="tag-sim">ALTA</span></td><td>2 dias</td></tr>
+    <tr><td>9</td><td>Lista de confirmados/recusados no painel do admin (pagina de Jogos)</td><td><span class="tag-sim">ALTA</span></td><td>1 dia</td></tr>
+    <tr><td>10</td><td>Deploy em producao: Railway (backend) + Vercel (frontend) + Supabase (banco)</td><td><span class="tag-sim">CRITICO</span></td><td>2 dias</td></tr>
+    <tr><td>11</td><td>Configurar dominio, SSL e variaveis de ambiente em producao</td><td><span class="tag-sim">ALTA</span></td><td>1 dia</td></tr>
+    <tr><td>12</td><td>Cadastrar os primeiros 5 times reais (hands-on) e coletar feedback</td><td><span class="tag-sim">CRITICO</span></td><td>Ongoing</td></tr>
+  </table>
+
+  <h3>Sprint 3 — Mes 2: Viral e Crescimento</h3>
+  <table>
+    <tr><th>#</th><th>Tarefa</th><th>Prioridade</th><th>Estimativa</th></tr>
+    <tr><td>13</td><td>Notificacoes push via Firebase Cloud Messaging + Angular SwPush</td><td><span class="tag-sim">ALTA</span></td><td>5 dias</td></tr>
+    <tr><td>14</td><td>Geracao de card de resultado automatico (imagem Canvas/HTML para compartilhar)</td><td><span class="tag-sim">ALTA</span></td><td>4 dias</td></tr>
+    <tr><td>15</td><td>Link de convite do time com URL magica (token seguro de convite)</td><td><span class="tag-sim">ALTA</span></td><td>2 dias</td></tr>
+    <tr><td>16</td><td>Criar perfis @futsalmanager no Instagram e TikTok</td><td><span class="tag-parc">MEDIA</span></td><td>1 dia</td></tr>
+    <tr><td>17</td><td>Gravar 3 videos de demonstracao de 60 segundos para Reels e TikTok</td><td><span class="tag-parc">MEDIA</span></td><td>3 dias</td></tr>
+    <tr><td>18</td><td>Meta: 25 times ativos ao final do mes 2</td><td><span class="tag-sim">CRITICO</span></td><td>—</td></tr>
+  </table>
+
+  <h3>Sprint 4 — Mes 3: Parcerias e Inicio de Receita</h3>
+  <table>
+    <tr><th>#</th><th>Tarefa</th><th>Prioridade</th><th>Estimativa</th></tr>
+    <tr><td>19</td><td>Contatar 5 organizadores de ligas locais para parceria (6 meses gratis)</td><td><span class="tag-sim">ALTA</span></td><td>Ongoing</td></tr>
+    <tr><td>20</td><td>Contatar 3 arenas de futsal da sua cidade para parceria</td><td><span class="tag-sim">ALTA</span></td><td>Ongoing</td></tr>
+    <tr><td>21</td><td>Implementar plano Starter (R$19/mes) com cobranca via Stripe ou Asaas</td><td><span class="tag-sim">ALTA</span></td><td>5 dias</td></tr>
+    <tr><td>22</td><td>Login com Google (OAuth 2.0) para reduzir friccao de cadastro</td><td><span class="tag-parc">MEDIA</span></td><td>3 dias</td></tr>
+    <tr><td>23</td><td>Inicio do modulo de campeonatos (entidade Campeonato no backend)</td><td><span class="tag-parc">MEDIA</span></td><td>2 semanas</td></tr>
+    <tr><td>24</td><td>Meta: 50 times cadastrados, R$500/mes de receita ao final do mes 3</td><td><span class="tag-sim">CRITICO</span></td><td>—</td></tr>
+  </table>
+
+  <h3>KPIs para Acompanhar Semanalmente</h3>
+  <div class="stat-row">
+    <div class="stat-box"><div class="val">Times</div><div class="lbl">Total de times ativos cadastrados</div></div>
+    <div class="stat-box"><div class="val">DAU</div><div class="lbl">Usuarios ativos por dia (admin + atleta)</div></div>
+    <div class="stat-box"><div class="val">MRR</div><div class="lbl">Receita recorrente mensal</div></div>
+    <div class="stat-box"><div class="val">Churn</div><div class="lbl">Times que saem por mes (meta: abaixo de 5%)</div></div>
+  </div>
+
+  <h3>Metas Consolidadas por Marco</h3>
+  <table>
+    <tr><th>Marco</th><th>Times Totais</th><th>Times Pagantes</th><th>Atletas</th><th>Receita/mes</th></tr>
+    <tr><td>Mes 1</td><td>10</td><td>0</td><td>150</td><td>R$ 0 (beta)</td></tr>
+    <tr><td>Mes 3</td><td>50</td><td>15</td><td>750</td><td>R$ 500</td></tr>
+    <tr><td>Mes 6</td><td>150</td><td>60</td><td>2.500</td><td>R$ 2.400</td></tr>
+    <tr><td>Mes 12</td><td>500</td><td>200</td><td>8.000</td><td>R$ 11.000</td></tr>
+    <tr><td>Mes 18</td><td>1.500</td><td>600</td><td>25.000</td><td>R$ 40.000</td></tr>
+    <tr><td>Mes 24</td><td>5.000</td><td>1.500</td><td>80.000</td><td>R$ 100.000</td></tr>
+  </table>
+
+  <div class="callout">
+    <h4>A Mensagem Final</h4>
+    <p>A maior vantagem que voce tem hoje nao e a tecnologia — e o <strong>acesso direto a comunidade</strong>. Seus grupos de WhatsApp, seus conhecidos que jogam, sua rede pessoal sao o ativo que nenhum concorrente com dinheiro de investidor consegue comprar. Use isso agora, enquanto a plataforma e pequena o suficiente para voce dar atencao pessoal a cada time. Os primeiros 50 times que voce atender com cuidado vao te dar 50 defensores da marca que farao o marketing por voce — de graca, pelo WhatsApp, todo fim de semana.</p>
+  </div>
+
+  <hr>
+  <p style="text-align:center;color:#64748b;font-size:10pt;">
+    Futsal Manager — Plano Estrategico v1.0 &nbsp;|&nbsp; Danilo Cassiano Dias &nbsp;|&nbsp; Junho 2026<br>
+    Documento confidencial. Nao compartilhar sem autorizacao.
+  </p>
+</div>
+</body>
+</html>
