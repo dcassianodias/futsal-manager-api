@@ -5,8 +5,11 @@ import com.futsalmanager.api.dto.request.TimeUpdateRequest;
 import com.futsalmanager.api.dto.response.TimeResponse;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.testcontainers.AbstractTestcontainersTest;
 import com.futsalmanager.testcontainers.DockerAvailableCondition;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,12 +59,20 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
     @Autowired
     private TimeRepository timeRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UsuarioTimeRepository usuarioTimeRepository;
+
     private TimeCreateRequest createRequest;
 
     private Authentication currentAuth;
 
     @BeforeEach
     void setUp() {
+        usuarioTimeRepository.deleteAll();
+        usuarioRepository.deleteAll();
         timeRepository.deleteAll();
 
         createRequest = new TimeCreateRequest(
@@ -69,33 +80,41 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
             BigDecimal.valueOf(100.00)
         );
 
-        autenticarComoTime(UUID.randomUUID());
+        autenticarComoUsuarioSemVinculo();
     }
 
-    /**
-     * Troca qual usuário fica autenticado nas próximas chamadas ao MockMvc
-     * (use junto com auth(), aplicado em cada .perform(...)). O time não
-     * precisa existir no banco - nada relê o principal a partir dele.
-     */
-    private void autenticarComoTime(UUID timeId) {
-        Time time = new Time(timeId, null, null, null, null, null);
+    private Usuario persistirUsuario(String email) {
         Usuario usuario = new Usuario();
-        usuario.setId(UUID.randomUUID());
         usuario.setNome("Usuário de Teste");
-        usuario.setEmail("teste-auth@email.com");
-        usuario.setSenha("senha");
-        usuario.setPerfil(PerfilUsuario.ADMIN);
+        usuario.setEmail(email);
+        usuario.setSenha("senha-hash");
         usuario.setAtivo(true);
-        usuario.setTime(time);
+        usuario.setGols(0);
+        return usuarioRepository.save(usuario);
+    }
+
+    private void autenticarComoUsuarioSemVinculo() {
+        Usuario usuario = persistirUsuario("teste-auth-" + UUID.randomUUID() + "@email.com");
+        currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+    }
+
+    /** Persiste um usuário com vínculo ADMIN ativo no time informado e autentica como ele. */
+    private void autenticarComoAdminDoTime(UUID timeId) {
+        Usuario usuario = persistirUsuario("admin-" + UUID.randomUUID() + "@email.com");
+
+        Time time = timeRepository.findById(timeId)
+            .orElseGet(() -> new Time(timeId, null, null, null, null, null));
+
+        UsuarioTime vinculo = new UsuarioTime();
+        vinculo.setUsuario(usuario);
+        vinculo.setTime(time);
+        vinculo.setPerfil(PerfilUsuario.ADMIN);
+        vinculo.setAtivo(true);
+        usuarioTimeRepository.save(vinculo);
 
         currentAuth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
     }
 
-    /**
-     * RequestPostProcessor que injeta o usuário autenticado atual na
-     * requisição - setar o SecurityContextHolder direto não sobrevive
-     * ao SecurityContextHolderFilter entre chamadas separadas do MockMvc.
-     */
     private RequestPostProcessor auth() {
         return request -> authentication(currentAuth).postProcessRequest(request);
     }
@@ -196,7 +215,7 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
     void update_DeveAtualizarNoPostgreSQL() throws Exception {
         // Criar time
         TimeResponse created = criarTime();
-        autenticarComoTime(created.id());
+        autenticarComoAdminDoTime(created.id());
 
         // Atualizar
         TimeUpdateRequest updateRequest = new TimeUpdateRequest(
@@ -220,6 +239,28 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
         assertThat(timeOptional.get().getNome()).isEqualTo("Time Atualizado no PostgreSQL");
     }
 
+    @Test
+    void update_DevePermitirZerarValorMensalidade_QuandoTimeNaoQuerMaisCobrar() throws Exception {
+        TimeResponse created = criarTime();
+        autenticarComoAdminDoTime(created.id());
+
+        TimeUpdateRequest zerarMensalidade = new TimeUpdateRequest(null, BigDecimal.ZERO, null);
+
+        String json = objectMapper.writeValueAsString(zerarMensalidade);
+        mockMvc.perform(
+            patch("/api/time/v1/{id}", created.id())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .with(auth())
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.valorMensalidade", is(0)));
+
+        var timeOptional = timeRepository.findById(created.id());
+        assertThat(timeOptional).isPresent();
+        assertThat(timeOptional.get().getValorMensalidade()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
     private TimeResponse criarTime() throws Exception {
         String json = objectMapper.writeValueAsString(createRequest);
 
@@ -238,6 +279,8 @@ class TimeControllerPostgresIntegrationTest extends AbstractTestcontainersTest {
 
     @AfterEach
     void tearDown() {
+        usuarioTimeRepository.deleteAll();
+        usuarioRepository.deleteAll();
         timeRepository.deleteAll();
     }
 }

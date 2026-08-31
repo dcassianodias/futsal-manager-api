@@ -7,6 +7,7 @@ import com.futsalmanager.domain.entities.Evento;
 import com.futsalmanager.domain.entities.Pagamento;
 import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.domain.enums.TipoPagamento;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -15,8 +16,14 @@ import java.util.UUID;
 @Component
 public class PagamentoValidator {
 
+    private final UsuarioTimeRepository usuarioTimeRepository;
+
+    public PagamentoValidator(UsuarioTimeRepository usuarioTimeRepository) {
+        this.usuarioTimeRepository = usuarioTimeRepository;
+    }
+
     public void validarCreate(PagamentoCreateRequest request, Usuario usuario, Evento evento) {
-        if (!usuario.getTime().getId().equals(request.timeId())) {
+        if (!usuarioTimeRepository.existsByUsuarioIdAndTimeIdAndAtivoTrue(usuario.getId(), request.timeId())) {
             throw new BusinessException("Usuário não pertence ao time informado.");
         }
 

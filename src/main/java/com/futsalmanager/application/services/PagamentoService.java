@@ -20,6 +20,7 @@ import com.futsalmanager.infrastructure.repositories.EventoRepository;
 import com.futsalmanager.infrastructure.repositories.PagamentoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,18 +36,21 @@ public class PagamentoService {
     private final PagamentoRepository pagamentoRepository;
     private final TimeRepository timeRepository;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioTimeRepository usuarioTimeRepository;
     private final EventoRepository eventoRepository;
     private final PagamentoMapper pagamentoMapper;
     private final PagamentoValidator validator;
     private final AuthenticatedUserProvider authenticatedUserProvider;
 
     public PagamentoService(PagamentoRepository pagamentoRepository, TimeRepository timeRepository,
-                            UsuarioRepository usuarioRepository, EventoRepository eventoRepository,
+                            UsuarioRepository usuarioRepository, UsuarioTimeRepository usuarioTimeRepository,
+                            EventoRepository eventoRepository,
                             PagamentoMapper pagamentoMapper, PagamentoValidator validator,
                             AuthenticatedUserProvider authenticatedUserProvider) {
         this.pagamentoRepository = pagamentoRepository;
         this.timeRepository = timeRepository;
         this.usuarioRepository = usuarioRepository;
+        this.usuarioTimeRepository = usuarioTimeRepository;
         this.eventoRepository = eventoRepository;
         this.pagamentoMapper = pagamentoMapper;
         this.validator = validator;
@@ -57,7 +61,7 @@ public class PagamentoService {
     public PagamentoResponse findById(UUID id) {
         Pagamento entity = pagamentoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarMembro(entity.getTime().getId());
         return pagamentoMapper.toResponse(entity);
     }
 
@@ -66,9 +70,13 @@ public class PagamentoService {
         return pagamentoMapper.toResponseList(pagamentoRepository.findAll());
     }
 
+    /**
+     * Visão financeira de todos os membros do time — por privacidade, só o admin pode ver
+     * o pagamento individual de outra pessoa. Atleta consulta o próprio via findByUsuario.
+     */
     @Transactional(readOnly = true)
     public List<PagamentoResponse> findByTime(UUID timeId){
-        authenticatedUserProvider.validarAcessoAoTime(timeId);
+        authenticatedUserProvider.validarAdminDoTime(timeId);
         List<Pagamento> list = pagamentoRepository.findByTimeIdOrderByDataCriacaoDesc(timeId);
         return pagamentoMapper.toResponseList(list);
     }
@@ -76,7 +84,7 @@ public class PagamentoService {
     @Transactional
     public PagamentoResponse create(PagamentoCreateRequest request) {
 
-        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
+        authenticatedUserProvider.validarAdminDoTime(request.timeId());
 
         Time time = timeRepository.findById(request.timeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Time não encontrado: " + request.timeId()));
@@ -112,7 +120,7 @@ public class PagamentoService {
 
         Pagamento entity = pagamentoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
 
         validator.validarUpdate(entity, request);
 
@@ -150,7 +158,7 @@ public class PagamentoService {
             throw new BusinessException("Time é obrigatório para gerar mensalidades.");
         }
 
-        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
+        authenticatedUserProvider.validarAdminDoTime(request.timeId());
 
         if (request.mesReferencia() == null) {
             throw new BusinessException("Mês de referência é obrigatório para gerar mensalidades.");
@@ -163,19 +171,25 @@ public class PagamentoService {
             throw new BusinessException("Time não possui mensalidade configurada");
         }
 
-        List<Usuario> atletas = usuarioRepository
-                .findByTimeIdAndPerfilAndAtivoTrue(request.timeId(), PerfilUsuario.ATLETA);
+        // Mensalidade é gerada pra qualquer membro ativo do time, admin incluído —
+        // quem administra o time também joga e também paga.
+        List<Usuario> atletas = usuarioTimeRepository
+                .findByTimeIdAndAtivoTrue(request.timeId())
+                .stream()
+                .map(com.futsalmanager.domain.entities.UsuarioTime::getUsuario)
+                .toList();
 
         int totalGerados = 0;
         int totalJaExistentes = 0;
 
         for (Usuario atleta : atletas) {
 
-            boolean jaExiste = pagamentoRepository.existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamento(
+            boolean jaExiste = pagamentoRepository.existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamentoAndStatusPagamentoNot(
                     time.getId(),
                     atleta.getId(),
                     request.mesReferencia(),
-                    TipoPagamento.MENSALIDADE
+                    TipoPagamento.MENSALIDADE,
+                    StatusPagamento.CANCELADO
             );
 
             if (jaExiste) {
@@ -213,7 +227,7 @@ public class PagamentoService {
         Pagamento entity = pagamentoRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Pagamento não encontrado: " + id)
         );
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
 
         if (entity.getStatusPagamento() == StatusPagamento.PAGO){
             throw new BusinessException("Não é possível cancelar um pagamento já pago.");
@@ -235,9 +249,14 @@ public class PagamentoService {
 
     @Transactional(readOnly = true)
     public List<PagamentoResponse> findPendentesByUsuario(UUID usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + usuarioId));
-        authenticatedUserProvider.validarAcessoAoTime(usuario.getTime().getId());
+
+        Usuario logado = authenticatedUserProvider.getUsuarioAutenticado();
+        if (!logado.getId().equals(usuarioId) && !possuiVinculoAdminComUsuario(usuarioId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Você só pode consultar seus próprios pagamentos pendentes");
+        }
 
         return pagamentoMapper.toResponseList(
                 pagamentoRepository.findByUsuarioIdAndStatusPagamentoOrderByDataCriacaoDesc(
@@ -248,18 +267,15 @@ public class PagamentoService {
 
     @Transactional(readOnly = true)
     public List<PagamentoResponse> findByUsuario(UUID usuarioId) {
-        Usuario alvo = usuarioRepository.findById(usuarioId)
+        usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + usuarioId));
 
         Usuario logado = authenticatedUserProvider.getUsuarioAutenticado();
         boolean consultandoProprioHistorico = logado.getId().equals(usuarioId);
 
-        if (!consultandoProprioHistorico) {
-            authenticatedUserProvider.validarAcessoAoTime(alvo.getTime().getId());
-            if (logado.getPerfil() != PerfilUsuario.ADMIN) {
-                throw new org.springframework.security.access.AccessDeniedException(
-                        "Você só pode consultar seu próprio histórico de pagamentos");
-            }
+        if (!consultandoProprioHistorico && !possuiVinculoAdminComUsuario(usuarioId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Você só pode consultar seu próprio histórico de pagamentos");
         }
 
         return pagamentoMapper.toResponseList(
@@ -267,9 +283,29 @@ public class PagamentoService {
         );
     }
 
+    /**
+     * Verifica se o usuário autenticado é ADMIN de pelo menos um time em comum com o usuário alvo.
+     * Substitui a antiga checagem de "mesmo time único", já que um usuário agora pode ter
+     * múltiplos vínculos de time (UsuarioTime).
+     */
+    private boolean possuiVinculoAdminComUsuario(UUID alvoUsuarioId) {
+        UUID logadoId = authenticatedUserProvider.getUsuarioAutenticado().getId();
+
+        var timesAdminLogado = usuarioTimeRepository.findByUsuarioIdAndAtivoTrue(logadoId).stream()
+                .filter(vinculo -> vinculo.getPerfil() == PerfilUsuario.ADMIN)
+                .map(vinculo -> vinculo.getTime().getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (timesAdminLogado.isEmpty()) return false;
+
+        return usuarioTimeRepository.findByUsuarioIdAndAtivoTrue(alvoUsuarioId).stream()
+                .anyMatch(vinculo -> timesAdminLogado.contains(vinculo.getTime().getId()));
+    }
+
+    /** Mesma regra de privacidade de findByTime: só admin vê pendências de outras pessoas. */
     @Transactional(readOnly = true)
     public List<PagamentoResponse> findPendentesByTime(UUID timeId) {
-        authenticatedUserProvider.validarAcessoAoTime(timeId);
+        authenticatedUserProvider.validarAdminDoTime(timeId);
         return pagamentoMapper.toResponseList(
                 pagamentoRepository.findByTimeIdAndStatusPagamentoOrderByDataCriacaoDesc(
                         timeId, StatusPagamento.PENDENTE
@@ -280,7 +316,7 @@ public class PagamentoService {
     public PagamentoResponse marcarComoPago(UUID id) {
         Pagamento entity = pagamentoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
 
         if (entity.getStatusPagamento() == StatusPagamento.PAGO) {
             throw new BusinessException("Pagamento já está marcado como pago");

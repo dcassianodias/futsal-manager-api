@@ -10,7 +10,7 @@ public record TimeUpdateRequest(
 
         String nome,
 
-        @DecimalMin(value = "0.01", message = "Valor deve ser maior que zero")
+        @DecimalMin(value = "0.00", message = "Valor não pode ser negativo")
         BigDecimal valorMensalidade,
 
         Boolean ativo

@@ -33,4 +33,13 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
             LocalDate mesReferencia,
             TipoPagamento tipoPagamento
     );
+
+    /** Um pagamento cancelado não deve travar a geração de uma nova mensalidade pro mesmo mês. */
+    boolean existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamentoAndStatusPagamentoNot(
+            UUID timeId,
+            UUID usuarioId,
+            LocalDate mesReferencia,
+            TipoPagamento tipoPagamento,
+            StatusPagamento statusPagamento
+    );
 }

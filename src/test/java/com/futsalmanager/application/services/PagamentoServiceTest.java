@@ -12,6 +12,7 @@ import com.futsalmanager.application.validators.PagamentoValidator;
 import com.futsalmanager.domain.entities.Pagamento;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
 import com.futsalmanager.domain.enums.StatusPagamento;
 import com.futsalmanager.domain.enums.TipoPagamento;
@@ -19,6 +20,7 @@ import com.futsalmanager.infrastructure.repositories.EventoRepository;
 import com.futsalmanager.infrastructure.repositories.PagamentoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
+import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +50,9 @@ class PagamentoServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private UsuarioTimeRepository usuarioTimeRepository;
 
     @Mock
     private EventoRepository eventoRepository;
@@ -134,6 +140,20 @@ class PagamentoServiceTest {
 
         assertThat(result).isEqualTo(responses);
         verify(pagamentoRepository).findByTimeIdOrderByDataCriacaoDesc(timeId);
+        // Ver pagamento de todo mundo é coisa de admin, não de qualquer membro — privacidade.
+        verify(authenticatedUserProvider).validarAdminDoTime(timeId);
+    }
+
+    @Test
+    void findPendentesByTime_DeveExigirAdmin_NaoQualquerMembro() {
+        when(pagamentoRepository.findByTimeIdAndStatusPagamentoOrderByDataCriacaoDesc(timeId, StatusPagamento.PENDENTE))
+            .thenReturn(List.of());
+        when(pagamentoMapper.toResponseList(List.of())).thenReturn(List.of());
+
+        pagamentoService.findPendentesByTime(timeId);
+
+        verify(authenticatedUserProvider).validarAdminDoTime(timeId);
+        verify(authenticatedUserProvider, never()).validarMembro(any());
     }
 
     @Test
@@ -223,13 +243,14 @@ class PagamentoServiceTest {
         when(time.getId()).thenReturn(timeId);
 
         Usuario atleta = mock(Usuario.class);
-        List<Usuario> atletas = List.of(atleta);
+        UsuarioTime vinculoAtleta = mock(UsuarioTime.class);
+        when(vinculoAtleta.getUsuario()).thenReturn(atleta);
+        List<UsuarioTime> vinculos = List.of(vinculoAtleta);
 
         when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
-        when(usuarioRepository.findByTimeIdAndPerfilAndAtivoTrue(timeId, PerfilUsuario.ATLETA))
-            .thenReturn(atletas);
-        when(pagamentoRepository.existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamento(
-            any(), any(), any(), any()
+        when(usuarioTimeRepository.findByTimeIdAndAtivoTrue(timeId)).thenReturn(vinculos);
+        when(pagamentoRepository.existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamentoAndStatusPagamentoNot(
+            any(), any(), any(), any(), eq(StatusPagamento.CANCELADO)
         )).thenReturn(false);
 
         GerarMensalidadeResponse result = pagamentoService.gerarMensalidades(request);
@@ -237,7 +258,66 @@ class PagamentoServiceTest {
         assertThat(result.timeId()).isEqualTo(timeId);
         assertThat(result.mesReferencia()).isEqualTo(java.time.LocalDate.of(2026, 4, 1));
         verify(timeRepository).findById(timeId);
-        verify(usuarioRepository).findByTimeIdAndPerfilAndAtivoTrue(timeId, PerfilUsuario.ATLETA);
+        verify(usuarioTimeRepository).findByTimeIdAndAtivoTrue(timeId);
+        verify(pagamentoRepository).save(any(Pagamento.class));
+    }
+
+    @Test
+    void gerarMensalidades_DeveGerarParaAdminTambem_NaoSoAtleta() {
+        // Quem administra o time também joga e também paga — admin não fica de fora.
+        GerarMensalidadeRequest request = mock(GerarMensalidadeRequest.class);
+        when(request.timeId()).thenReturn(timeId);
+        when(request.mesReferencia()).thenReturn(java.time.LocalDate.of(2026, 4, 1));
+
+        Time time = mock(Time.class);
+        when(time.getValorMensalidade()).thenReturn(java.math.BigDecimal.valueOf(50.00));
+        when(time.getId()).thenReturn(timeId);
+
+        Usuario admin = mock(Usuario.class);
+        Usuario atleta = mock(Usuario.class);
+        UsuarioTime vinculoAdmin = mock(UsuarioTime.class);
+        UsuarioTime vinculoAtleta = mock(UsuarioTime.class);
+        when(vinculoAdmin.getUsuario()).thenReturn(admin);
+        when(vinculoAtleta.getUsuario()).thenReturn(atleta);
+
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(usuarioTimeRepository.findByTimeIdAndAtivoTrue(timeId)).thenReturn(List.of(vinculoAdmin, vinculoAtleta));
+        when(pagamentoRepository.existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamentoAndStatusPagamentoNot(
+            any(), any(), any(), any(), eq(StatusPagamento.CANCELADO)
+        )).thenReturn(false);
+
+        GerarMensalidadeResponse result = pagamentoService.gerarMensalidades(request);
+
+        assertThat(result.totalGerados()).isEqualTo(2);
+        verify(pagamentoRepository, times(2)).save(any(Pagamento.class));
+    }
+
+    @Test
+    void gerarMensalidades_DeveGerarNovaPendente_QuandoMensalidadeDoMesFoiCancelada() {
+        // Uma mensalidade cancelada não pode travar a geração de uma nova pro mesmo mês.
+        GerarMensalidadeRequest request = mock(GerarMensalidadeRequest.class);
+        when(request.timeId()).thenReturn(timeId);
+        when(request.mesReferencia()).thenReturn(java.time.LocalDate.of(2026, 4, 1));
+
+        Time time = mock(Time.class);
+        when(time.getValorMensalidade()).thenReturn(java.math.BigDecimal.valueOf(50.00));
+        when(time.getId()).thenReturn(timeId);
+
+        Usuario atleta = mock(Usuario.class);
+        UsuarioTime vinculoAtleta = mock(UsuarioTime.class);
+        when(vinculoAtleta.getUsuario()).thenReturn(atleta);
+
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(usuarioTimeRepository.findByTimeIdAndAtivoTrue(timeId)).thenReturn(List.of(vinculoAtleta));
+        // Só existe uma mensalidade CANCELADA pra esse mês — não deve contar como "já existe".
+        when(pagamentoRepository.existsByTimeIdAndUsuarioIdAndMesReferenciaAndTipoPagamentoAndStatusPagamentoNot(
+            any(), any(), any(), any(), eq(StatusPagamento.CANCELADO)
+        )).thenReturn(false);
+
+        GerarMensalidadeResponse result = pagamentoService.gerarMensalidades(request);
+
+        assertThat(result.totalGerados()).isEqualTo(1);
+        assertThat(result.totalJaExistentes()).isEqualTo(0);
         verify(pagamentoRepository).save(any(Pagamento.class));
     }
 
@@ -296,15 +376,16 @@ class PagamentoServiceTest {
     }
 
     @Test
-    void findPendentesByUsuario_DeveRetornarPagamentosPendentesDoUsuario() {
+    void findPendentesByUsuario_DeveRetornarPagamentosPendentesDoUsuario_QuandoConsultaOProprioHistorico() {
         Usuario usuario = mock(Usuario.class);
-        when(usuario.getTime()).thenReturn(mock(Time.class));
+        when(usuario.getId()).thenReturn(usuarioId);
         Pagamento pagamento = mock(Pagamento.class);
         PagamentoResponse response = mock(PagamentoResponse.class);
         List<Pagamento> pagamentos = List.of(pagamento);
         List<PagamentoResponse> responses = List.of(response);
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(authenticatedUserProvider.getUsuarioAutenticado()).thenReturn(usuario);
         when(pagamentoRepository.findByUsuarioIdAndStatusPagamentoOrderByDataCriacaoDesc(usuarioId, StatusPagamento.PENDENTE))
             .thenReturn(pagamentos);
         when(pagamentoMapper.toResponseList(pagamentos)).thenReturn(responses);
