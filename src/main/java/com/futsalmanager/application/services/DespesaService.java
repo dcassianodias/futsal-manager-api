@@ -44,7 +44,7 @@ public class DespesaService {
     public DespesaResponse findById(UUID id) {
         Despesa entity = despesaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarMembro(entity.getTime().getId());
         return despesaMapper.toResponse(entity);
     }
 
@@ -55,13 +55,13 @@ public class DespesaService {
 
     @Transactional(readOnly = true)
     public List<DespesaResponse> findByTime(UUID timeId){
-        authenticatedUserProvider.validarAcessoAoTime(timeId);
+        authenticatedUserProvider.validarMembro(timeId);
         return despesaMapper.toResponseList(despesaRepository.findByTimeIdOrderByMesReferenciaDesc(timeId));
     }
 
     @Transactional
     public DespesaResponse create(DespesaCreateRequest request){
-        authenticatedUserProvider.validarAcessoAoTime(request.timeId());
+        authenticatedUserProvider.validarAdminDoTime(request.timeId());
         validator.validarCreate(request);
 
         Time time = timeRepository.findById(request.timeId())
@@ -81,7 +81,7 @@ public class DespesaService {
     public DespesaResponse update(UUID id, DespesaUpdateRequest request) {
         Despesa entity = despesaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
 
         validator.validarUpdate(request);
 
@@ -91,10 +91,25 @@ public class DespesaService {
     }
 
     @Transactional
+    public DespesaResponse marcarComoPago(UUID id) {
+        Despesa entity = despesaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
+
+        entity.pagar();
+
+        Despesa saved = despesaRepository.save(entity);
+
+        log.info("Despesa marcada como paga: id={}, valor={}", saved.getId(), saved.getValor());
+
+        return despesaMapper.toResponse(saved);
+    }
+
+    @Transactional
     public void delete(UUID id) {
         Despesa entity = despesaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
-        authenticatedUserProvider.validarAcessoAoTime(entity.getTime().getId());
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
 
         despesaRepository.delete(entity);
 

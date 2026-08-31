@@ -1,5 +1,7 @@
 package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.application.exceptions.BusinessException;
+import com.futsalmanager.domain.enums.StatusDespesa;
 import com.futsalmanager.domain.enums.TipoDespesa;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -41,6 +43,11 @@ public class Despesa {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TipoDespesa tipoDespesa;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private StatusDespesa status = StatusDespesa.PENDENTE;
+
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime dataCriacao;
@@ -61,6 +68,13 @@ public class Despesa {
         this.tipoDespesa = tipoDespesa;
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
+    }
+
+    public void pagar() {
+        if (this.status != StatusDespesa.PENDENTE) {
+            throw new BusinessException("Despesa só pode ser marcada como paga se estiver pendente");
+        }
+        this.status = StatusDespesa.PAGO;
     }
 
     public UUID getId() {
@@ -109,6 +123,14 @@ public class Despesa {
 
     public void setTipoDespesa(TipoDespesa tipoDespesa) {
         this.tipoDespesa = tipoDespesa;
+    }
+
+    public StatusDespesa getStatus() {
+        return status;
+    }
+
+    public void setStatus(StatusDespesa status) {
+        this.status = status;
     }
 
 

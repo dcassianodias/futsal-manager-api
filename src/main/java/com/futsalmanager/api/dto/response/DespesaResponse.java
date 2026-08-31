@@ -1,5 +1,6 @@
 package com.futsalmanager.api.dto.response;
 
+import com.futsalmanager.domain.enums.StatusDespesa;
 import com.futsalmanager.domain.enums.TipoDespesa;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ public record DespesaResponse(
         BigDecimal valor,
         LocalDate mesReferencia,
         TipoDespesa tipoDespesa,
+        StatusDespesa status,
         LocalDateTime dataCriacao,
         LocalDateTime dataAtualizacao
 ) {

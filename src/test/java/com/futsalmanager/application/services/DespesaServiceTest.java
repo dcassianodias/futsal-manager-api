@@ -188,6 +188,42 @@ class DespesaServiceTest {
     }
 
     @Test
+    void marcarComoPago_DeveMarcarDespesaComoPaga_QuandoDespesaPendente() {
+        Despesa despesa = mock(Despesa.class);
+        when(despesa.getTime()).thenReturn(mock(Time.class));
+        DespesaResponse response = mock(DespesaResponse.class);
+
+        when(despesaRepository.findById(despesaId)).thenReturn(Optional.of(despesa));
+        when(despesaRepository.save(despesa)).thenReturn(despesa);
+        when(despesaMapper.toResponse(despesa)).thenReturn(response);
+
+        DespesaResponse result = despesaService.marcarComoPago(despesaId);
+
+        assertThat(result).isEqualTo(response);
+        verify(despesaRepository).findById(despesaId);
+        verify(despesa).pagar();
+        verify(despesaRepository).save(despesa);
+    }
+
+    @Test
+    void marcarComoPago_DevePropagrarBusinessException_QuandoDespesaJaPaga() {
+        Despesa despesa = mock(Despesa.class);
+        when(despesa.getTime()).thenReturn(mock(Time.class));
+        doThrow(new com.futsalmanager.application.exceptions.BusinessException(
+                "Despesa só pode ser marcada como paga se estiver pendente"))
+            .when(despesa).pagar();
+
+        when(despesaRepository.findById(despesaId)).thenReturn(Optional.of(despesa));
+
+        assertThatThrownBy(() -> despesaService.marcarComoPago(despesaId))
+            .isInstanceOf(com.futsalmanager.application.exceptions.BusinessException.class)
+            .hasMessage("Despesa só pode ser marcada como paga se estiver pendente");
+
+        verify(despesaRepository).findById(despesaId);
+        verify(despesaRepository, never()).save(any());
+    }
+
+    @Test
     void delete_DeveDeletarDespesa_QuandoDespesaExiste() {
         Despesa despesa = mock(Despesa.class);
         when(despesa.getTime()).thenReturn(mock(Time.class));
