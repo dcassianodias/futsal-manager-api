@@ -7,8 +7,10 @@ import java.util.UUID;
 public record TimeResponse(
         UUID id,
         String nome,
+        String codigo,
         BigDecimal valorMensalidade,
         Boolean ativo,
+        Boolean publico,
         LocalDateTime dataCriacao,
         LocalDateTime dataAtualizacao
 ) {

@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -121,4 +122,46 @@ public class TimeController {
         timeService.ativar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/tornar-publico")
+    @Operation(summary = "Tornar o time público (visível na página pública sem login)")
+    @ApiResponse(
+            responseCode = "204",
+            description = "Time tornado público"
+    )
+    public ResponseEntity<Void> tornarPublico(@PathVariable UUID id){
+        timeService.tornarPublico(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/tornar-privado")
+    @Operation(summary = "Tornar o time privado (remove a página pública)")
+    @ApiResponse(
+            responseCode = "204",
+            description = "Time tornado privado"
+    )
+    public ResponseEntity<Void> tornarPrivado(@PathVariable UUID id){
+        timeService.tornarPrivado(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/regenerar-codigo")
+    @Operation(summary = "Gerar um novo código de convite, invalidando o link anterior")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Código regenerado",
+            content = @Content(schema = @Schema(implementation = TimeResponse.class))
+    )
+    public ResponseEntity<TimeResponse> regenerarCodigo(@PathVariable UUID id){
+        return ResponseEntity.ok(timeService.regenerarCodigo(id));
+    }
+
+    @PostMapping(value = "/{id}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Atualizar o logo do time (PNG, JPEG ou WEBP, até 2MB)")
+    @ApiResponse(responseCode = "204", description = "Logo atualizado")
+    public ResponseEntity<Void> atualizarLogo(@PathVariable UUID id, @RequestParam("arquivo") MultipartFile arquivo){
+        timeService.atualizarLogo(id, arquivo);
+        return ResponseEntity.noContent().build();
+    }
+
 }

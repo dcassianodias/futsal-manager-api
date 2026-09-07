@@ -1,5 +1,6 @@
 package com.futsalmanager.application.validators;
 
+import com.futsalmanager.api.dto.request.FinalizarJogoRequest;
 import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
 import com.futsalmanager.application.exceptions.BusinessException;
@@ -9,6 +10,7 @@ import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -124,6 +126,18 @@ public class JogoValidator {
 
     public void validarPodeFinalizar(Jogo entity) {
         validarStatusAgendado(entity, "finalizar");
+    }
+
+    public void validarArtilheiros(FinalizarJogoRequest request) {
+        List<UUID> artilheiros = request.artilheiros();
+        int totalArtilheiros = artilheiros == null ? 0 : artilheiros.size();
+
+        if (totalArtilheiros != request.golsTime()) {
+            throw new BusinessException(
+                    "A quantidade de artilheiros informados (" + totalArtilheiros +
+                            ") não corresponde ao placar do time (" + request.golsTime() + ")"
+            );
+        }
     }
 
     private void validarStatusAgendado(Jogo entity, String acao) {

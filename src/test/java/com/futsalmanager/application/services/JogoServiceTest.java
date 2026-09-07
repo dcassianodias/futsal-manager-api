@@ -4,13 +4,17 @@ import com.futsalmanager.api.dto.request.FinalizarJogoRequest;
 import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
 import com.futsalmanager.api.dto.response.JogoResponse;
+import com.futsalmanager.api.dto.response.TimePublicoResponse;
 import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.application.mappers.JogoMapper;
 import com.futsalmanager.application.validators.JogoValidator;
+import com.futsalmanager.domain.entities.GolRegistro;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Time;
+import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.domain.enums.StatusJogo;
+import com.futsalmanager.infrastructure.repositories.GolRegistroRepository;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
@@ -28,6 +32,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -52,6 +57,9 @@ class JogoServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private GolRegistroRepository golRegistroRepository;
 
     @Mock
     private AuthenticatedUserProvider authenticatedUserProvider;
@@ -226,6 +234,30 @@ class JogoServiceTest {
     }
 
     @Test
+    void finalizar_DevePersistirGolRegistro_QuandoArtilheirosInformados() {
+        Jogo jogo = mock(Jogo.class);
+        JogoResponse response = mock(JogoResponse.class);
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
+        UUID usuarioId = UUID.randomUUID();
+        Usuario usuario = mock(Usuario.class);
+        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, List.of(usuarioId, usuarioId));
+
+        when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
+        when(jogoRepository.save(jogo)).thenReturn(jogo);
+        when(jogo.getTime()).thenReturn(time);
+        when(jogoMapper.toResponse(jogo)).thenReturn(response);
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(usuario.getGols()).thenReturn(0);
+
+        jogoService.finalizar(jogoId, request);
+
+        verify(usuario).setGols(2);
+        verify(usuarioRepository).save(usuario);
+        verify(golRegistroRepository).save(argThat(g ->
+            g.getJogo() == jogo && g.getUsuario() == usuario && g.getQuantidade() == 2));
+    }
+
+    @Test
     void finalizar_DeveLancarBusinessException_QuandoJogoNaoAgendado() {
         Jogo jogo = mock(Jogo.class);
         Time time = new Time(timeId, "Time Teste", null, true, null, null);
@@ -282,5 +314,74 @@ class JogoServiceTest {
         verify(jogoRepository).findById(jogoId);
         verify(validator).validarPodeCancelar(jogo);
         verifyNoMoreInteractions(jogoRepository);
+    }
+
+    @Test
+    void buscarFeedPublico_DeveRetornarFeed_QuandoTimePublico() {
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
+        time.setPublico(true);
+
+        Jogo proximo = mock(Jogo.class);
+        Jogo finalizado1 = mock(Jogo.class);
+        Jogo finalizado2 = mock(Jogo.class);
+        JogoResponse proximoResponse = mock(JogoResponse.class);
+        JogoResponse finalizado1Response = mock(JogoResponse.class);
+        JogoResponse finalizado2Response = mock(JogoResponse.class);
+
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(jogoRepository.findByTimeIdAndStatusJogoOrderByDataHoraAsc(timeId, StatusJogo.AGENDADO))
+            .thenReturn(List.of(proximo));
+        when(jogoRepository.findByTimeIdAndStatusJogoOrderByDataHoraDesc(timeId, StatusJogo.FINALIZADO))
+            .thenReturn(List.of(finalizado1, finalizado2));
+        when(jogoMapper.toResponse(proximo)).thenReturn(proximoResponse);
+        when(jogoMapper.toResponse(finalizado1)).thenReturn(finalizado1Response);
+        when(jogoMapper.toResponse(finalizado2)).thenReturn(finalizado2Response);
+
+        TimePublicoResponse result = jogoService.buscarFeedPublico(timeId);
+
+        assertThat(result.id()).isEqualTo(timeId);
+        assertThat(result.nome()).isEqualTo("Time Teste");
+        assertThat(result.proximoJogo()).isEqualTo(proximoResponse);
+        assertThat(result.ultimosResultados()).containsExactly(finalizado1Response, finalizado2Response);
+    }
+
+    @Test
+    void buscarFeedPublico_DeveRetornarProximoJogoNulo_QuandoNaoHaJogoAgendado() {
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
+        time.setPublico(true);
+
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(jogoRepository.findByTimeIdAndStatusJogoOrderByDataHoraAsc(timeId, StatusJogo.AGENDADO))
+            .thenReturn(List.of());
+        when(jogoRepository.findByTimeIdAndStatusJogoOrderByDataHoraDesc(timeId, StatusJogo.FINALIZADO))
+            .thenReturn(List.of());
+
+        TimePublicoResponse result = jogoService.buscarFeedPublico(timeId);
+
+        assertThat(result.proximoJogo()).isNull();
+        assertThat(result.ultimosResultados()).isEmpty();
+    }
+
+    @Test
+    void buscarFeedPublico_DeveLancarResourceNotFoundException_QuandoTimeNaoPublico() {
+        Time time = new Time(timeId, "Time Teste", null, true, null, null);
+        time.setPublico(false);
+
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+
+        assertThatThrownBy(() -> jogoService.buscarFeedPublico(timeId))
+            .isInstanceOf(ResourceNotFoundException.class);
+
+        verifyNoInteractions(jogoRepository);
+    }
+
+    @Test
+    void buscarFeedPublico_DeveLancarResourceNotFoundException_QuandoTimeNaoExiste() {
+        when(timeRepository.findById(timeId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jogoService.buscarFeedPublico(timeId))
+            .isInstanceOf(ResourceNotFoundException.class);
+
+        verifyNoInteractions(jogoRepository);
     }
 }

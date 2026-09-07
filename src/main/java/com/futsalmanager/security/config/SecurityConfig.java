@@ -64,6 +64,9 @@ public class SecurityConfig {
                         auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/time/publico/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/feed/publico/**").permitAll()
+                                .requestMatchers("/api/time/convite/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

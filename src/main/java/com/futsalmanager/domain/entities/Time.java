@@ -31,6 +31,14 @@ public class Time {
     @Column(unique = true)
     private String codigo;
 
+    @Column(nullable = false)
+    private Boolean publico = false;
+
+    private byte[] logo;
+
+    @Column(name = "logo_content_type", length = 50)
+    private String logoContentType;
+
     @Column(name = "data_criacao", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime dataCriacao;
@@ -90,6 +98,30 @@ public class Time {
 
     public void setCodigo(String codigo) {
         this.codigo = codigo;
+    }
+
+    public Boolean getPublico() {
+        return publico;
+    }
+
+    public void setPublico(Boolean publico) {
+        this.publico = publico;
+    }
+
+    public byte[] getLogo() {
+        return logo;
+    }
+
+    public void setLogo(byte[] logo) {
+        this.logo = logo;
+    }
+
+    public String getLogoContentType() {
+        return logoContentType;
+    }
+
+    public void setLogoContentType(String logoContentType) {
+        this.logoContentType = logoContentType;
     }
 
     public LocalDateTime getDataCriacao() {

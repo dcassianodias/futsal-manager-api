@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -63,8 +64,10 @@ class TimeServiceTest {
         timeResponse = new TimeResponse(
             timeId,
             "Time Teste",
+            "TIM-123456789",
             BigDecimal.valueOf(50.00),
             true,
+            false,
             LocalDateTime.now(),
             LocalDateTime.now()
         );
@@ -297,5 +300,152 @@ class TimeServiceTest {
 
         verify(timeRepository).findById(timeId);
         verifyNoMoreInteractions(timeRepository);
+    }
+
+    @Test
+    void tornarPublico_DeveTornarTimePublico_QuandoTimePrivado() {
+        // Arrange
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(timeRepository.save(time)).thenReturn(time);
+
+        // Act
+        timeService.tornarPublico(timeId);
+
+        // Assert
+        verify(timeRepository).findById(timeId);
+        verify(timeRepository).save(time);
+        assertThat(time.getPublico()).isTrue();
+    }
+
+    @Test
+    void tornarPublico_DeveLancarBusinessException_QuandoTimeJaPublico() {
+        // Arrange
+        time.setPublico(true);
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+
+        // Act & Assert
+        assertThatThrownBy(() -> timeService.tornarPublico(timeId))
+            .isInstanceOf(BusinessException.class)
+            .hasMessage("Time já é público");
+
+        verify(timeRepository).findById(timeId);
+        verifyNoMoreInteractions(timeRepository);
+    }
+
+    @Test
+    void tornarPrivado_DeveTornarTimePrivado_QuandoTimePublico() {
+        // Arrange
+        time.setPublico(true);
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(timeRepository.save(time)).thenReturn(time);
+
+        // Act
+        timeService.tornarPrivado(timeId);
+
+        // Assert
+        verify(timeRepository).findById(timeId);
+        verify(timeRepository).save(time);
+        assertThat(time.getPublico()).isFalse();
+    }
+
+    @Test
+    void tornarPrivado_DeveLancarBusinessException_QuandoTimeJaPrivado() {
+        // Arrange
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+
+        // Act & Assert
+        assertThatThrownBy(() -> timeService.tornarPrivado(timeId))
+            .isInstanceOf(BusinessException.class)
+            .hasMessage("Time já é privado");
+
+        verify(timeRepository).findById(timeId);
+        verifyNoMoreInteractions(timeRepository);
+    }
+
+    @Test
+    void regenerarCodigo_DeveTrocarOCodigoDoTime() {
+        // Arrange
+        String codigoAntigo = time.getCodigo();
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(timeRepository.save(time)).thenReturn(time);
+        when(timeMapper.toResponse(time)).thenReturn(timeResponse);
+
+        // Act
+        timeService.regenerarCodigo(timeId);
+
+        // Assert
+        verify(timeRepository).findById(timeId);
+        verify(timeRepository).save(time);
+        assertThat(time.getCodigo()).isNotEqualTo(codigoAntigo);
+        assertThat(time.getCodigo()).startsWith("TIM-");
+    }
+
+    @Test
+    void regenerarCodigo_DeveLancarResourceNotFoundException_QuandoTimeNaoExiste() {
+        // Arrange
+        when(timeRepository.findById(timeId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> timeService.regenerarCodigo(timeId))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessage("Time não encontrado: " + timeId);
+
+        verify(timeRepository).findById(timeId);
+        verifyNoMoreInteractions(timeRepository);
+    }
+
+    @Test
+    void atualizarLogo_DeveSalvarBytesEContentType() {
+        // Arrange
+        MockMultipartFile arquivo = new MockMultipartFile("arquivo", "logo.png", "image/png", "conteudo-fake".getBytes());
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+        when(timeRepository.save(time)).thenReturn(time);
+
+        // Act
+        timeService.atualizarLogo(timeId, arquivo);
+
+        // Assert
+        assertThat(time.getLogo()).isEqualTo("conteudo-fake".getBytes());
+        assertThat(time.getLogoContentType()).isEqualTo("image/png");
+        verify(timeRepository).save(time);
+    }
+
+    @Test
+    void atualizarLogo_DeveRejeitarFormatoNaoSuportado() {
+        // Arrange
+        MockMultipartFile arquivo = new MockMultipartFile("arquivo", "logo.gif", "image/gif", "conteudo".getBytes());
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+
+        // Act & Assert
+        assertThatThrownBy(() -> timeService.atualizarLogo(timeId, arquivo))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("Formato de imagem não suportado");
+
+        verify(timeRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void atualizarLogo_DeveRejeitarArquivoMuitoGrande() {
+        // Arrange
+        byte[] conteudoGrande = new byte[3 * 1024 * 1024];
+        MockMultipartFile arquivo = new MockMultipartFile("arquivo", "logo.png", "image/png", conteudoGrande);
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+
+        // Act & Assert
+        assertThatThrownBy(() -> timeService.atualizarLogo(timeId, arquivo))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("Imagem muito grande");
+
+        verify(timeRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void buscarLogo_DeveLancarResourceNotFoundException_QuandoTimeNaoTemLogo() {
+        // Arrange
+        when(timeRepository.findById(timeId)).thenReturn(Optional.of(time));
+
+        // Act & Assert
+        assertThatThrownBy(() -> timeService.buscarLogo(timeId))
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 }

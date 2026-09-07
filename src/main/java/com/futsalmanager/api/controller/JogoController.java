@@ -3,8 +3,12 @@ package com.futsalmanager.api.controller;
 import com.futsalmanager.api.dto.request.FinalizarJogoRequest;
 import com.futsalmanager.api.dto.request.JogoCreateRequest;
 import com.futsalmanager.api.dto.request.JogoUpdateRequest;
+import com.futsalmanager.api.dto.request.VotarMelhorRodadaRequest;
+import com.futsalmanager.api.dto.response.ArtilheiroResponse;
 import com.futsalmanager.api.dto.response.JogoResponse;
+import com.futsalmanager.api.dto.response.ResultadoVotacaoResponse;
 import com.futsalmanager.application.services.JogoService;
+import com.futsalmanager.application.services.VotacaoService;
 import com.futsalmanager.openapi.annotations.ApiResponseCommon;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -30,9 +34,11 @@ import java.util.UUID;
 public class JogoController {
 
     private final JogoService service;
+    private final VotacaoService votacaoService;
 
-    public JogoController(JogoService service) {
+    public JogoController(JogoService service, VotacaoService votacaoService) {
         this.service = service;
+        this.votacaoService = votacaoService;
     }
 
     @GetMapping("/{id}")
@@ -68,6 +74,17 @@ public class JogoController {
     public ResponseEntity<List<JogoResponse>> findByTime(@PathVariable UUID timeId){
         List<JogoResponse> list = service.findByTime(timeId);
         return ResponseEntity.ok(list); // 🔥 sempre 200
+    }
+
+    @GetMapping("/time/{timeId}/artilheiros")
+    @Operation(summary = "Ranking de artilheiros do time")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Ranking de gols do time",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ArtilheiroResponse.class)))
+    )
+    public ResponseEntity<List<ArtilheiroResponse>> artilheiros(@PathVariable UUID timeId){
+        return ResponseEntity.ok(service.artilheirosPorTime(timeId));
     }
 
     @PostMapping
@@ -122,5 +139,28 @@ public class JogoController {
     )
     public ResponseEntity<JogoResponse> cancelar(@PathVariable UUID id){
         return ResponseEntity.ok(service.cancelar(id));
+    }
+
+    @PostMapping("/{id}/votar-melhor")
+    @Operation(summary = "Votar no melhor jogador da rodada")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Voto registrado",
+            content = @Content(schema = @Schema(implementation = ResultadoVotacaoResponse.class))
+    )
+    public ResponseEntity<ResultadoVotacaoResponse> votarMelhor(@PathVariable UUID id,
+                                                                 @RequestBody @Valid VotarMelhorRodadaRequest request){
+        return ResponseEntity.ok(votacaoService.votar(id, request));
+    }
+
+    @GetMapping("/{id}/votacao")
+    @Operation(summary = "Resultado da votação de melhor da rodada")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Resultado da votação",
+            content = @Content(schema = @Schema(implementation = ResultadoVotacaoResponse.class))
+    )
+    public ResponseEntity<ResultadoVotacaoResponse> votacao(@PathVariable UUID id){
+        return ResponseEntity.ok(votacaoService.buscarResultado(id));
     }
 }
