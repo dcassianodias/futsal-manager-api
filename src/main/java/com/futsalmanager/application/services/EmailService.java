@@ -3,27 +3,37 @@ package com.futsalmanager.application.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
-import jakarta.mail.internet.MimeMessage;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Envia e-mail via API HTTP do Brevo (não SMTP): o Railway bloqueia conexões
+ * SMTP de saída (porta 587) por padrão anti-abuso, então a integração precisa
+ * ser HTTPS.
+ */
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
+    private final RestClient restClient;
+    private final String apiKey;
     private final String remetente;
     private final String frontendUrl;
 
-    public EmailService(JavaMailSender mailSender,
-                         @Value("${spring.mail.username:}") String remetente,
+    public EmailService(@Value("${app.email.brevo-api-key:}") String apiKey,
+                         @Value("${app.email.remetente:}") String remetente,
                          @Value("${app.frontend-url}") String frontendUrl) {
-        this.mailSender = mailSender;
+        this.apiKey = apiKey;
         this.remetente = remetente;
         this.frontendUrl = frontendUrl;
+        this.restClient = RestClient.builder()
+                .baseUrl("https://api.brevo.com/v3")
+                .build();
     }
 
     /**
@@ -33,7 +43,6 @@ public class EmailService {
     public void enviarEmailRedefinicaoSenha(String destinatario, String nome, String token) {
         String link = frontendUrl + "/redefinir-senha?token=" + token;
 
-        String assunto = "Redefinição de senha - Jogaí";
         String corpo = """
                 <div style="font-family: Arial, sans-serif; background-color: #0a0d10; padding: 32px; color: #e5e7eb;">
                   <div style="max-width: 480px; margin: 0 auto; background-color: #12161b; border-radius: 12px; padding: 32px; border: 1px solid #1f2937;">
@@ -50,15 +59,19 @@ public class EmailService {
                 """.formatted(nome, link, link);
 
         try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
-            helper.setTo(destinatario);
-            helper.setSubject(assunto);
-            helper.setText(corpo, true);
-            if (!remetente.isBlank()) {
-                helper.setFrom(remetente);
-            }
-            mailSender.send(mimeMessage);
+            restClient.post()
+                    .uri("/smtp/email")
+                    .header("api-key", apiKey)
+                    .header("accept", "application/json")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of(
+                            "sender", Map.of("name", "Jogaí", "email", remetente),
+                            "to", List.of(Map.of("email", destinatario, "name", nome)),
+                            "subject", "Redefinição de senha - Jogaí",
+                            "htmlContent", corpo
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
         } catch (Exception e) {
             log.error("Falha ao enviar e-mail de redefinição de senha para {}", destinatario, e);
         }
