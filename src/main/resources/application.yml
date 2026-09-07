@@ -27,6 +27,14 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: 3600000 # 1 hour in milliseconds
 
+sentry:
+  # Monitoramento de erro em produção. Sem SENTRY_DSN definido, o SDK fica desativado
+  # (não envia nada) — é o comportamento padrão em dev local.
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:local}
+  send-default-pii: true
+  # Sem tracing/performance monitoring por enquanto (evita gastar a cota grátis à toa).
+
 cors:
   # em produção, defina CORS_ALLOWED_ORIGIN com a URL do frontend (ex: https://futsal-manager.vercel.app)
   allowed-origin: ${CORS_ALLOWED_ORIGIN:*}
