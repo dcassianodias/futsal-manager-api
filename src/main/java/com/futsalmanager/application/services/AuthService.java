@@ -1,7 +1,9 @@
 package com.futsalmanager.application.services;
 
+import com.futsalmanager.api.dto.request.ConviteRegistrarRequest;
 import com.futsalmanager.api.dto.request.LoginRequest;
 import com.futsalmanager.api.dto.request.RegisterRequest;
+import com.futsalmanager.api.dto.response.ConviteInfoResponse;
 import com.futsalmanager.api.dto.response.LoginResponse;
 import com.futsalmanager.api.dto.response.MembroTimeResponse;
 import com.futsalmanager.application.exceptions.BusinessException;
@@ -103,6 +105,69 @@ public class AuthService {
         String token = jwtService.generateToken(usuarioSalvo);
 
         return criarLoginResponse(usuarioSalvo, token);
+    }
+
+    @Transactional(readOnly = true)
+    public ConviteInfoResponse buscarConvite(String codigo) {
+        Time time = timeRepository.findByCodigo(codigo)
+                .filter(Time::getAtivo)
+                .orElseThrow(() -> new ResourceNotFoundException("Convite inválido"));
+
+        return new ConviteInfoResponse(time.getNome());
+    }
+
+    /**
+     * Cadastro via link de convite: a pessoa entra diretamente no time do convite,
+     * como ATLETA, sem depender do admin inventar uma senha por ela (ver addMembro
+     * em UsuarioTimeService, que ainda existe para o fluxo manual por e-mail).
+     */
+    @Transactional
+    public LoginResponse registrarViaConvite(String codigo, ConviteRegistrarRequest request) {
+        Time time = timeRepository.findByCodigo(codigo)
+                .filter(Time::getAtivo)
+                .orElseThrow(() -> new ResourceNotFoundException("Convite inválido"));
+
+        String email = request.email().trim().toLowerCase();
+
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .map(existente -> vincularIdentidadeExistenteAoConvite(existente, request.senha()))
+                .orElseGet(() -> criarNovaIdentidadeComoAtleta(email, request));
+
+        if (usuarioTimeRepository.existsByUsuarioIdAndTimeIdAndAtivoTrue(usuario.getId(), time.getId())) {
+            throw new BusinessException("Você já é membro deste time.");
+        }
+
+        UsuarioTime vinculo = usuarioTimeRepository.findByUsuarioIdAndTimeId(usuario.getId(), time.getId())
+                .orElseGet(UsuarioTime::new);
+        vinculo.setUsuario(usuario);
+        vinculo.setTime(time);
+        vinculo.setPerfil(PerfilUsuario.ATLETA);
+        vinculo.setAtivo(true);
+        usuarioTimeRepository.save(vinculo);
+
+        String token = jwtService.generateToken(usuario);
+
+        return criarLoginResponse(usuario, token);
+    }
+
+    private Usuario vincularIdentidadeExistenteAoConvite(Usuario existente, String senha) {
+        if (!passwordEncoder.matches(senha, existente.getSenha())) {
+            throw new BusinessException("Este e-mail já tem uma conta. Informe a senha dessa conta para entrar com ela neste time, ou entre e peça pro admin te adicionar por lá.");
+        }
+        if (!existente.isAtivo()) {
+            throw new BusinessException("Esta conta está desativada.");
+        }
+        return existente;
+    }
+
+    private Usuario criarNovaIdentidadeComoAtleta(String email, ConviteRegistrarRequest request) {
+        Usuario usuario = new Usuario();
+        usuario.setNome(request.nome().trim());
+        usuario.setEmail(email);
+        usuario.setSenha(passwordEncoder.encode(request.senha()));
+        usuario.setAtivo(true);
+        usuario.setGols(0);
+        return usuarioRepository.save(usuario);
     }
 
     /**
