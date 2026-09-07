@@ -23,6 +23,21 @@ spring:
     swagger-ui:
       use-root-path: true
 
+  # SMTP para envio do e-mail de "esqueci minha senha". Em produção, defina SMTP_HOST,
+  # SMTP_USERNAME e SMTP_PASSWORD (ex: conta Gmail com senha de app, ou provedor
+  # transacional como Brevo/Resend/Mailgun).
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: 3600000 # 1 hour in milliseconds
@@ -34,4 +49,8 @@ cors:
 app:
   # email da conta que pode ver estatísticas globais e dados entre times (defina em produção)
   platform-owner-email: ${PLATFORM_OWNER_EMAIL:}
+  # em produção, defina FRONTEND_URL com a URL pública do frontend (ex: https://jogai.vercel.app)
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  password-reset:
+    token-expiration: ${PASSWORD_RESET_EXPIRATION:1800000} # 30 min em milissegundos
 

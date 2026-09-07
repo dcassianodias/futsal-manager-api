@@ -1,28 +1,36 @@
 package com.futsalmanager.application.services;
 
 import com.futsalmanager.api.dto.request.ConviteRegistrarRequest;
+import com.futsalmanager.api.dto.request.EsqueciSenhaRequest;
 import com.futsalmanager.api.dto.request.LoginRequest;
+import com.futsalmanager.api.dto.request.RedefinirSenhaRequest;
 import com.futsalmanager.api.dto.request.RegisterRequest;
 import com.futsalmanager.api.dto.response.ConviteInfoResponse;
 import com.futsalmanager.api.dto.response.LoginResponse;
 import com.futsalmanager.api.dto.response.MembroTimeResponse;
+import com.futsalmanager.api.dto.response.MensagemResponse;
 import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.application.exceptions.ResourceNotFoundException;
+import com.futsalmanager.domain.entities.PasswordResetToken;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.domain.entities.UsuarioTime;
 import com.futsalmanager.domain.enums.PerfilUsuario;
+import com.futsalmanager.infrastructure.repositories.PasswordResetTokenRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
 import com.futsalmanager.security.jwt.JwtService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -34,10 +42,15 @@ public class AuthService {
     private final TimeRepository timeRepository;
     private final PasswordEncoder passwordEncoder;
     private final TimeService timeService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
+    private final long passwordResetExpirationMs;
 
     public AuthService(AuthenticationManager authenticationManager, JwtService jwtService,
                        UsuarioRepository usuarioRepository, UsuarioTimeRepository usuarioTimeRepository,
-                       TimeRepository timeRepository, PasswordEncoder passwordEncoder, TimeService timeService) {
+                       TimeRepository timeRepository, PasswordEncoder passwordEncoder, TimeService timeService,
+                       PasswordResetTokenRepository passwordResetTokenRepository, EmailService emailService,
+                       @Value("${app.password-reset.token-expiration}") long passwordResetExpirationMs) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.usuarioRepository = usuarioRepository;
@@ -45,6 +58,9 @@ public class AuthService {
         this.timeRepository = timeRepository;
         this.passwordEncoder = passwordEncoder;
         this.timeService = timeService;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
+        this.passwordResetExpirationMs = passwordResetExpirationMs;
     }
 
     @Transactional(readOnly = true)
@@ -193,6 +209,48 @@ public class AuthService {
         usuario.setAtivo(true);
         usuario.setGols(0);
         return usuarioRepository.save(usuario);
+    }
+
+    /**
+     * Resposta sempre genérica (mesmo se o e-mail não existir na base) para não
+     * revelar quais e-mails têm conta cadastrada.
+     */
+    @Transactional
+    public MensagemResponse esqueciSenha(EsqueciSenhaRequest request) {
+        String email = request.email().trim().toLowerCase();
+
+        usuarioRepository.findByEmail(email)
+                .filter(Usuario::isAtivo)
+                .ifPresent(usuario -> {
+                    PasswordResetToken resetToken = new PasswordResetToken();
+                    resetToken.setUsuario(usuario);
+                    resetToken.setToken(UUID.randomUUID().toString());
+                    resetToken.setDataExpiracao(LocalDateTime.now().plus(java.time.Duration.ofMillis(passwordResetExpirationMs)));
+                    passwordResetTokenRepository.save(resetToken);
+
+                    emailService.enviarEmailRedefinicaoSenha(usuario.getEmail(), usuario.getNome(), resetToken.getToken());
+                });
+
+        return new MensagemResponse("Se este e-mail estiver cadastrado, enviamos um link de redefinição de senha.");
+    }
+
+    @Transactional
+    public MensagemResponse redefinirSenha(RedefinirSenhaRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.token())
+                .orElseThrow(() -> new BusinessException("Link de redefinição inválido ou expirado."));
+
+        if (!resetToken.isValido()) {
+            throw new BusinessException("Link de redefinição inválido ou expirado.");
+        }
+
+        Usuario usuario = resetToken.getUsuario();
+        usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
+        usuarioRepository.save(usuario);
+
+        resetToken.setUsado(true);
+        passwordResetTokenRepository.save(resetToken);
+
+        return new MensagemResponse("Senha redefinida com sucesso.");
     }
 
     private LoginResponse criarLoginResponse(
