@@ -1,8 +1,11 @@
 package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.domain.enums.QuadroTime;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -28,6 +31,11 @@ public class GolRegistro {
     @Column(nullable = false)
     private Integer quantidade;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quadro", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private QuadroTime quadro;
+
     @CreationTimestamp
     @Column(name = "data_criacao", nullable = false, updatable = false)
     private LocalDateTime dataCriacao;
@@ -35,10 +43,11 @@ public class GolRegistro {
     protected GolRegistro() {
     }
 
-    public GolRegistro(Jogo jogo, Usuario usuario, Integer quantidade) {
+    public GolRegistro(Jogo jogo, Usuario usuario, Integer quantidade, QuadroTime quadro) {
         this.jogo = jogo;
         this.usuario = usuario;
         this.quantidade = quantidade;
+        this.quadro = quadro;
     }
 
     public UUID getId() {
@@ -67,6 +76,14 @@ public class GolRegistro {
 
     public void setQuantidade(Integer quantidade) {
         this.quantidade = quantidade;
+    }
+
+    public QuadroTime getQuadro() {
+        return quadro;
+    }
+
+    public void setQuadro(QuadroTime quadro) {
+        this.quadro = quadro;
     }
 
     public LocalDateTime getDataCriacao() {

@@ -8,15 +8,25 @@ import java.util.UUID;
 
 public record FinalizarJogoRequest(
 
-        @NotNull(message = "Gols do time é obrigatório")
+        @NotNull(message = "Gols do time no 1º quadro é obrigatório")
         @Min(value = 0, message = "Gols não pode ser negativo")
-        Integer golsTime,
+        Integer golsTimeQuadro1,
 
-        @NotNull(message = "Gols do adversário é obrigatório")
+        @NotNull(message = "Gols do adversário no 1º quadro é obrigatório")
         @Min(value = 0, message = "Gols não pode ser negativo")
-        Integer golsAdversario,
+        Integer golsAdversarioQuadro1,
 
-        List<UUID> artilheiros
+        List<UUID> artilheirosQuadro1,
+
+        @NotNull(message = "Gols do time no 2º quadro é obrigatório")
+        @Min(value = 0, message = "Gols não pode ser negativo")
+        Integer golsTimeQuadro2,
+
+        @NotNull(message = "Gols do adversário no 2º quadro é obrigatório")
+        @Min(value = 0, message = "Gols não pode ser negativo")
+        Integer golsAdversarioQuadro2,
+
+        List<UUID> artilheirosQuadro2
 
 ) {
 }

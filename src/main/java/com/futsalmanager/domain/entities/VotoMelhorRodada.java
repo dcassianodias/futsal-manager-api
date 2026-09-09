@@ -1,8 +1,11 @@
 package com.futsalmanager.domain.entities;
 
+import com.futsalmanager.domain.enums.QuadroTime;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -29,6 +32,11 @@ public class VotoMelhorRodada {
     @JoinColumn(name = "votado_id", nullable = false)
     private Usuario votado;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quadro", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private QuadroTime quadro;
+
     @CreationTimestamp
     @Column(name = "data_criacao", nullable = false, updatable = false)
     private LocalDateTime dataCriacao;
@@ -36,10 +44,11 @@ public class VotoMelhorRodada {
     protected VotoMelhorRodada() {
     }
 
-    public VotoMelhorRodada(Jogo jogo, Usuario votante, Usuario votado) {
+    public VotoMelhorRodada(Jogo jogo, Usuario votante, Usuario votado, QuadroTime quadro) {
         this.jogo = jogo;
         this.votante = votante;
         this.votado = votado;
+        this.quadro = quadro;
     }
 
     public UUID getId() {
@@ -68,6 +77,14 @@ public class VotoMelhorRodada {
 
     public void setVotado(Usuario votado) {
         this.votado = votado;
+    }
+
+    public QuadroTime getQuadro() {
+        return quadro;
+    }
+
+    public void setQuadro(QuadroTime quadro) {
+        this.quadro = quadro;
     }
 
     public LocalDateTime getDataCriacao() {

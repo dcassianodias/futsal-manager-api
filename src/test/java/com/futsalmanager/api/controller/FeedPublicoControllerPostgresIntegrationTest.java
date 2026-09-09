@@ -4,6 +4,7 @@ import com.futsalmanager.domain.entities.GolRegistro;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.QuadroTime;
 import com.futsalmanager.domain.enums.ResultadoJogo;
 import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.GolRegistroRepository;
@@ -66,7 +67,7 @@ class FeedPublicoControllerPostgresIntegrationTest extends AbstractTestcontainer
         Usuario usuario = criarUsuario("Rafael Souza");
 
         Jogo jogo = criarJogoFinalizado(time, "Real Quintal", LocalDateTime.now().minusHours(3), 4, 2);
-        golRegistroRepository.save(new GolRegistro(jogo, usuario, 2));
+        golRegistroRepository.save(new GolRegistro(jogo, usuario, 2, QuadroTime.PRIMEIRO));
 
         mockMvc.perform(get("/api/feed/publico"))
                 .andExpect(status().isOk())

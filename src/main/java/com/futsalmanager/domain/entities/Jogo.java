@@ -40,11 +40,25 @@ public class Jogo {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private StatusJogo statusJogo;
 
+    /** Placar total do confronto — sempre a soma do 1º com o 2º quadro (quando houve os dois). */
     @Column(name = "gols_time")
     private Integer golsTime;
 
     @Column(name = "gols_adversario")
     private Integer golsAdversario;
+
+    @Column(name = "gols_time_quadro1")
+    private Integer golsTimeQuadro1;
+
+    @Column(name = "gols_adversario_quadro1")
+    private Integer golsAdversarioQuadro1;
+
+    /** Nulo quando o confronto não teve segundo quadro. */
+    @Column(name = "gols_time_quadro2")
+    private Integer golsTimeQuadro2;
+
+    @Column(name = "gols_adversario_quadro2")
+    private Integer golsAdversarioQuadro2;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "resultado")
@@ -131,6 +145,18 @@ public class Jogo {
 
     public Integer getGolsAdversario() { return golsAdversario; }
     public void setGolsAdversario(Integer golsAdversario) { this.golsAdversario = golsAdversario; }
+
+    public Integer getGolsTimeQuadro1() { return golsTimeQuadro1; }
+    public void setGolsTimeQuadro1(Integer golsTimeQuadro1) { this.golsTimeQuadro1 = golsTimeQuadro1; }
+
+    public Integer getGolsAdversarioQuadro1() { return golsAdversarioQuadro1; }
+    public void setGolsAdversarioQuadro1(Integer golsAdversarioQuadro1) { this.golsAdversarioQuadro1 = golsAdversarioQuadro1; }
+
+    public Integer getGolsTimeQuadro2() { return golsTimeQuadro2; }
+    public void setGolsTimeQuadro2(Integer golsTimeQuadro2) { this.golsTimeQuadro2 = golsTimeQuadro2; }
+
+    public Integer getGolsAdversarioQuadro2() { return golsAdversarioQuadro2; }
+    public void setGolsAdversarioQuadro2(Integer golsAdversarioQuadro2) { this.golsAdversarioQuadro2 = golsAdversarioQuadro2; }
 
     public ResultadoJogo getResultado() { return resultado; }
     public void setResultado(ResultadoJogo resultado) { this.resultado = resultado; }

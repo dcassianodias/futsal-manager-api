@@ -7,11 +7,11 @@ import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.QuadroTime;
 import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioTimeRepository;
-import com.futsalmanager.infrastructure.repositories.VotoContagemProjection;
 import com.futsalmanager.infrastructure.repositories.VotoMelhorRodadaRepository;
 import com.futsalmanager.security.service.AuthenticatedUserProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +74,7 @@ class VotacaoServiceTest {
     @Test
     void votar_DeveRegistrarVoto_QuandoDadosValidos() {
         Usuario votado = mock(Usuario.class);
-        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId);
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId, QuadroTime.PRIMEIRO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogo.getTime()).thenReturn(time);
@@ -82,21 +82,21 @@ class VotacaoServiceTest {
         when(authenticatedUserProvider.getUsuarioAutenticado()).thenReturn(votante);
         when(votante.getId()).thenReturn(votanteId);
         when(usuarioTimeRepository.existsByUsuarioIdAndTimeIdAndAtivoTrue(votadoId, timeId)).thenReturn(true);
-        when(votoRepository.existsByJogoIdAndVotanteId(jogoId, votanteId)).thenReturn(false);
+        when(votoRepository.existsByJogoIdAndVotanteIdAndQuadro(jogoId, votanteId, QuadroTime.PRIMEIRO)).thenReturn(false);
         when(usuarioRepository.findById(votadoId)).thenReturn(Optional.of(votado));
-        when(votoRepository.findByJogoIdAndVotanteId(jogoId, votanteId)).thenReturn(Optional.empty());
-        when(votoRepository.contarPorJogo(jogoId)).thenReturn(List.of());
+        when(votoRepository.findByJogoIdAndVotanteIdAndQuadro(jogoId, votanteId, QuadroTime.PRIMEIRO)).thenReturn(Optional.empty());
+        when(votoRepository.contarPorJogoEQuadro(jogoId, QuadroTime.PRIMEIRO)).thenReturn(List.of());
 
         ResultadoVotacaoResponse response = votacaoService.votar(jogoId, request);
 
         verify(authenticatedUserProvider, org.mockito.Mockito.times(2)).validarMembro(timeId);
-        verify(votoRepository).save(argThatVoto(jogo, votante, votado));
+        verify(votoRepository).save(argThatVoto(jogo, votante, votado, QuadroTime.PRIMEIRO));
         assertThat(response.resultado()).isEmpty();
     }
 
     @Test
     void votar_DeveLancarBusinessException_QuandoJogoNaoFinalizado() {
-        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId);
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId, QuadroTime.PRIMEIRO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogo.getTime()).thenReturn(time);
@@ -109,7 +109,7 @@ class VotacaoServiceTest {
 
     @Test
     void votar_DeveLancarBusinessException_QuandoVotarEmSiMesmo() {
-        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votanteId);
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votanteId, QuadroTime.PRIMEIRO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogo.getTime()).thenReturn(time);
@@ -124,7 +124,7 @@ class VotacaoServiceTest {
 
     @Test
     void votar_DeveLancarBusinessException_QuandoVotadoNaoEhMembroDoTime() {
-        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId);
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId, QuadroTime.PRIMEIRO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogo.getTime()).thenReturn(time);
@@ -139,8 +139,8 @@ class VotacaoServiceTest {
     }
 
     @Test
-    void votar_DeveLancarBusinessException_QuandoJaVotouNestaRodada() {
-        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId);
+    void votar_DeveLancarBusinessException_QuandoJaVotouNesteQuadro() {
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId, QuadroTime.PRIMEIRO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogo.getTime()).thenReturn(time);
@@ -148,16 +148,39 @@ class VotacaoServiceTest {
         when(authenticatedUserProvider.getUsuarioAutenticado()).thenReturn(votante);
         when(votante.getId()).thenReturn(votanteId);
         when(usuarioTimeRepository.existsByUsuarioIdAndTimeIdAndAtivoTrue(votadoId, timeId)).thenReturn(true);
-        when(votoRepository.existsByJogoIdAndVotanteId(jogoId, votanteId)).thenReturn(true);
+        when(votoRepository.existsByJogoIdAndVotanteIdAndQuadro(jogoId, votanteId, QuadroTime.PRIMEIRO)).thenReturn(true);
 
         assertThatThrownBy(() -> votacaoService.votar(jogoId, request))
             .isInstanceOf(BusinessException.class)
-            .hasMessage("Você já votou nesta rodada");
+            .hasMessage("Você já votou neste quadro");
+    }
+
+    @Test
+    void votar_DevePermitirVotoNoSegundoQuadro_MesmoTendoVotadoNoPrimeiro() {
+        Usuario votado = mock(Usuario.class);
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId, QuadroTime.SEGUNDO);
+
+        when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
+        when(jogo.getTime()).thenReturn(time);
+        when(jogo.getStatusJogo()).thenReturn(StatusJogo.FINALIZADO);
+        when(authenticatedUserProvider.getUsuarioAutenticado()).thenReturn(votante);
+        when(votante.getId()).thenReturn(votanteId);
+        when(usuarioTimeRepository.existsByUsuarioIdAndTimeIdAndAtivoTrue(votadoId, timeId)).thenReturn(true);
+        // já votou no PRIMEIRO, mas não no SEGUNDO — não deve bloquear
+        when(votoRepository.existsByJogoIdAndVotanteIdAndQuadro(jogoId, votanteId, QuadroTime.SEGUNDO)).thenReturn(false);
+        when(usuarioRepository.findById(votadoId)).thenReturn(Optional.of(votado));
+        when(votoRepository.findByJogoIdAndVotanteIdAndQuadro(jogoId, votanteId, QuadroTime.SEGUNDO)).thenReturn(Optional.empty());
+        when(votoRepository.contarPorJogoEQuadro(jogoId, QuadroTime.SEGUNDO)).thenReturn(List.of());
+
+        ResultadoVotacaoResponse response = votacaoService.votar(jogoId, request);
+
+        verify(votoRepository).save(argThatVoto(jogo, votante, votado, QuadroTime.SEGUNDO));
+        assertThat(response.resultado()).isEmpty();
     }
 
     @Test
     void votar_DeveLancarResourceNotFoundException_QuandoJogoNaoExiste() {
-        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId);
+        VotarMelhorRodadaRequest request = new VotarMelhorRodadaRequest(votadoId, QuadroTime.PRIMEIRO);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.empty());
 
@@ -165,8 +188,8 @@ class VotacaoServiceTest {
             .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    private com.futsalmanager.domain.entities.VotoMelhorRodada argThatVoto(Jogo jogo, Usuario votante, Usuario votado) {
+    private com.futsalmanager.domain.entities.VotoMelhorRodada argThatVoto(Jogo jogo, Usuario votante, Usuario votado, QuadroTime quadro) {
         return org.mockito.ArgumentMatchers.argThat(v ->
-            v.getJogo() == jogo && v.getVotante() == votante && v.getVotado() == votado);
+            v.getJogo() == jogo && v.getVotante() == votante && v.getVotado() == votado && v.getQuadro() == quadro);
     }
 }

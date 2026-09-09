@@ -7,6 +7,7 @@ import com.futsalmanager.api.dto.request.VotarMelhorRodadaRequest;
 import com.futsalmanager.api.dto.response.ArtilheiroResponse;
 import com.futsalmanager.api.dto.response.JogoResponse;
 import com.futsalmanager.api.dto.response.ResultadoVotacaoResponse;
+import com.futsalmanager.domain.enums.QuadroTime;
 import com.futsalmanager.application.services.JogoService;
 import com.futsalmanager.application.services.VotacaoService;
 import com.futsalmanager.openapi.annotations.ApiResponseCommon;
@@ -77,14 +78,15 @@ public class JogoController {
     }
 
     @GetMapping("/time/{timeId}/artilheiros")
-    @Operation(summary = "Ranking de artilheiros do time")
+    @Operation(summary = "Ranking de artilheiros do time — filtro opcional por quadro (PRIMEIRO/SEGUNDO)")
     @ApiResponse(
             responseCode = "200",
             description = "Ranking de gols do time",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ArtilheiroResponse.class)))
     )
-    public ResponseEntity<List<ArtilheiroResponse>> artilheiros(@PathVariable UUID timeId){
-        return ResponseEntity.ok(service.artilheirosPorTime(timeId));
+    public ResponseEntity<List<ArtilheiroResponse>> artilheiros(@PathVariable UUID timeId,
+                                                                  @RequestParam(required = false) QuadroTime quadro){
+        return ResponseEntity.ok(service.artilheirosPorTime(timeId, quadro));
     }
 
     @PostMapping
@@ -154,13 +156,14 @@ public class JogoController {
     }
 
     @GetMapping("/{id}/votacao")
-    @Operation(summary = "Resultado da votação de melhor da rodada")
+    @Operation(summary = "Resultado da votação de melhor da rodada — por quadro (PRIMEIRO/SEGUNDO)")
     @ApiResponse(
             responseCode = "200",
             description = "Resultado da votação",
             content = @Content(schema = @Schema(implementation = ResultadoVotacaoResponse.class))
     )
-    public ResponseEntity<ResultadoVotacaoResponse> votacao(@PathVariable UUID id){
-        return ResponseEntity.ok(votacaoService.buscarResultado(id));
+    public ResponseEntity<ResultadoVotacaoResponse> votacao(@PathVariable UUID id,
+                                                             @RequestParam QuadroTime quadro){
+        return ResponseEntity.ok(votacaoService.buscarResultado(id, quadro));
     }
 }

@@ -17,6 +17,7 @@ import com.futsalmanager.domain.entities.GolRegistro;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.domain.enums.QuadroTime;
 import com.futsalmanager.domain.enums.ResultadoJogo;
 import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.AproveitamentoProjection;
@@ -156,32 +157,44 @@ public class JogoService {
         validator.validarPodeFinalizar(entity);
         validator.validarArtilheiros(request);
 
-        entity.setStatusJogo(StatusJogo.FINALIZADO);
-        entity.setGolsTime(request.golsTime());
-        entity.setGolsAdversario(request.golsAdversario());
+        int golsTime = request.golsTimeQuadro1() + request.golsTimeQuadro2();
+        int golsAdversario = request.golsAdversarioQuadro1() + request.golsAdversarioQuadro2();
 
-        if (request.golsTime() > request.golsAdversario())      entity.setResultado(ResultadoJogo.VITORIA);
-        else if (request.golsTime() < request.golsAdversario()) entity.setResultado(ResultadoJogo.DERROTA);
-        else                                                     entity.setResultado(ResultadoJogo.EMPATE);
+        entity.setStatusJogo(StatusJogo.FINALIZADO);
+        entity.setGolsTime(golsTime);
+        entity.setGolsAdversario(golsAdversario);
+        entity.setGolsTimeQuadro1(request.golsTimeQuadro1());
+        entity.setGolsAdversarioQuadro1(request.golsAdversarioQuadro1());
+        entity.setGolsTimeQuadro2(request.golsTimeQuadro2());
+        entity.setGolsAdversarioQuadro2(request.golsAdversarioQuadro2());
+
+        if (golsTime > golsAdversario)      entity.setResultado(ResultadoJogo.VITORIA);
+        else if (golsTime < golsAdversario) entity.setResultado(ResultadoJogo.DERROTA);
+        else                                 entity.setResultado(ResultadoJogo.EMPATE);
 
         Jogo saved = jogoRepository.save(entity);
 
-        if (request.artilheiros() != null && !request.artilheiros().isEmpty()) {
-            Map<UUID, Long> golsPor = request.artilheiros().stream()
-                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-            golsPor.forEach((usuarioId, qtd) ->
-                    usuarioRepository.findById(usuarioId).ifPresent(u -> {
-                        u.setGols(u.getGols() + qtd.intValue());
-                        usuarioRepository.save(u);
-                        golRegistroRepository.save(new GolRegistro(saved, u, qtd.intValue()));
-                    })
-            );
-        }
+        registrarArtilheiros(saved, request.artilheirosQuadro1(), QuadroTime.PRIMEIRO);
+        registrarArtilheiros(saved, request.artilheirosQuadro2(), QuadroTime.SEGUNDO);
 
         log.info("Jogo finalizado: id={}, placar={}-{}, resultado={}",
                 saved.getId(), saved.getGolsTime(), saved.getGolsAdversario(), saved.getResultado());
 
         return jogoMapper.toResponse(saved);
+    }
+
+    private void registrarArtilheiros(Jogo jogo, List<UUID> artilheiros, QuadroTime quadro) {
+        if (artilheiros == null || artilheiros.isEmpty()) return;
+
+        Map<UUID, Long> golsPor = artilheiros.stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        golsPor.forEach((usuarioId, qtd) ->
+                usuarioRepository.findById(usuarioId).ifPresent(u -> {
+                    u.setGols(u.getGols() + qtd.intValue());
+                    usuarioRepository.save(u);
+                    golRegistroRepository.save(new GolRegistro(jogo, u, qtd.intValue(), quadro));
+                })
+        );
     }
 
     @Transactional
@@ -210,9 +223,12 @@ public class JogoService {
         }
 
     @Transactional(readOnly = true)
-    public List<ArtilheiroResponse> artilheirosPorTime(UUID timeId) {
+    public List<ArtilheiroResponse> artilheirosPorTime(UUID timeId, QuadroTime quadro) {
         authenticatedUserProvider.validarMembro(timeId);
-        return golRegistroRepository.rankingPorTime(timeId).stream()
+        List<ArtilheiroProjection> ranking = quadro == null
+                ? golRegistroRepository.rankingPorTime(timeId)
+                : golRegistroRepository.rankingPorTimeEQuadro(timeId, quadro);
+        return ranking.stream()
                 .map(p -> new ArtilheiroResponse(p.getUsuarioId(), p.getNome(), p.getGols()))
                 .toList();
     }
@@ -240,7 +256,7 @@ public class JogoService {
     @Transactional(readOnly = true)
     public FeedPublicoResponse buscarFeedAgregado() {
         List<Jogo> finalizados = jogoRepository.findTop12ByTimePublicoTrueAndStatusJogoOrderByDataHoraDesc(StatusJogo.FINALIZADO);
-        List<Jogo> agendados = jogoRepository.findTop2ByTimePublicoTrueAndStatusJogoOrderByDataHoraAsc(StatusJogo.AGENDADO);
+        List<Jogo> agendados = jogoRepository.findTop20ByTimePublicoTrueAndStatusJogoOrderByDataHoraAsc(StatusJogo.AGENDADO);
 
         List<UUID> idsFinalizados = finalizados.stream().map(Jogo::getId).toList();
         Map<UUID, String> destaquePorJogo = golRegistroRepository.findByJogoIdIn(idsFinalizados).stream()

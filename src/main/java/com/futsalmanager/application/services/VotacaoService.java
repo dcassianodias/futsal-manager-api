@@ -8,6 +8,7 @@ import com.futsalmanager.application.exceptions.ResourceNotFoundException;
 import com.futsalmanager.domain.entities.Jogo;
 import com.futsalmanager.domain.entities.Usuario;
 import com.futsalmanager.domain.entities.VotoMelhorRodada;
+import com.futsalmanager.domain.enums.QuadroTime;
 import com.futsalmanager.domain.enums.StatusJogo;
 import com.futsalmanager.infrastructure.repositories.JogoRepository;
 import com.futsalmanager.infrastructure.repositories.UsuarioRepository;
@@ -63,35 +64,36 @@ public class VotacaoService {
             throw new BusinessException("O usuário votado não pertence a este time");
         }
 
-        if (votoRepository.existsByJogoIdAndVotanteId(jogoId, votante.getId())) {
-            throw new BusinessException("Você já votou nesta rodada");
+        if (votoRepository.existsByJogoIdAndVotanteIdAndQuadro(jogoId, votante.getId(), request.quadro())) {
+            throw new BusinessException("Você já votou neste quadro");
         }
 
         Usuario votado = usuarioRepository.findById(request.votadoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + request.votadoId()));
 
         try {
-            votoRepository.save(new VotoMelhorRodada(jogo, votante, votado));
+            votoRepository.save(new VotoMelhorRodada(jogo, votante, votado, request.quadro()));
         } catch (DataIntegrityViolationException ex) {
-            throw new BusinessException("Você já votou nesta rodada");
+            throw new BusinessException("Você já votou neste quadro");
         }
 
-        log.info("Voto melhor da rodada: jogoId={}, votanteId={}, votadoId={}", jogoId, votante.getId(), votado.getId());
+        log.info("Voto melhor da rodada: jogoId={}, quadro={}, votanteId={}, votadoId={}",
+                jogoId, request.quadro(), votante.getId(), votado.getId());
 
-        return buscarResultado(jogoId);
+        return buscarResultado(jogoId, request.quadro());
     }
 
     @Transactional(readOnly = true)
-    public ResultadoVotacaoResponse buscarResultado(UUID jogoId) {
+    public ResultadoVotacaoResponse buscarResultado(UUID jogoId, QuadroTime quadro) {
         Jogo jogo = buscarOuErro(jogoId);
         authenticatedUserProvider.validarMembro(jogo.getTime().getId());
 
         UUID usuarioId = authenticatedUserProvider.getUsuarioAutenticado().getId();
-        UUID meuVoto = votoRepository.findByJogoIdAndVotanteId(jogoId, usuarioId)
+        UUID meuVoto = votoRepository.findByJogoIdAndVotanteIdAndQuadro(jogoId, usuarioId, quadro)
                 .map(v -> v.getVotado().getId())
                 .orElse(null);
 
-        var resultado = votoRepository.contarPorJogo(jogoId).stream()
+        var resultado = votoRepository.contarPorJogoEQuadro(jogoId, quadro).stream()
                 .map(p -> new VotoContagemResponse(p.getUsuarioId(), p.getNome(), p.getVotos()))
                 .toList();
 

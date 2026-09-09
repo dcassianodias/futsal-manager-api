@@ -55,7 +55,7 @@ public interface JogoRepository extends JpaRepository<Jogo, UUID> {
 
     List<Jogo> findTop12ByTimePublicoTrueAndStatusJogoOrderByDataHoraDesc(StatusJogo statusJogo);
 
-    List<Jogo> findTop2ByTimePublicoTrueAndStatusJogoOrderByDataHoraAsc(StatusJogo statusJogo);
+    List<Jogo> findTop20ByTimePublicoTrueAndStatusJogoOrderByDataHoraAsc(StatusJogo statusJogo);
 
     @Query("SELECT j.time.id AS timeId, " +
            "SUM(CASE WHEN j.resultado = :vitoria THEN 1L ELSE 0L END) AS vitorias, " +

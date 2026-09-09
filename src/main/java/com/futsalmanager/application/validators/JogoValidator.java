@@ -128,14 +128,19 @@ public class JogoValidator {
         validarStatusAgendado(entity, "finalizar");
     }
 
+    /** Todo jogo tem primeiro E segundo quadro — os dois placares vêm sempre preenchidos. */
     public void validarArtilheiros(FinalizarJogoRequest request) {
-        List<UUID> artilheiros = request.artilheiros();
+        validarArtilheirosDoQuadro(request.artilheirosQuadro1(), request.golsTimeQuadro1(), "1º");
+        validarArtilheirosDoQuadro(request.artilheirosQuadro2(), request.golsTimeQuadro2(), "2º");
+    }
+
+    private void validarArtilheirosDoQuadro(List<UUID> artilheiros, Integer golsTime, String quadroLabel) {
         int totalArtilheiros = artilheiros == null ? 0 : artilheiros.size();
 
-        if (totalArtilheiros != request.golsTime()) {
+        if (totalArtilheiros != golsTime) {
             throw new BusinessException(
-                    "A quantidade de artilheiros informados (" + totalArtilheiros +
-                            ") não corresponde ao placar do time (" + request.golsTime() + ")"
+                    "A quantidade de artilheiros informados no " + quadroLabel + " quadro (" + totalArtilheiros +
+                            ") não corresponde ao placar do time (" + golsTime + ")"
             );
         }
     }

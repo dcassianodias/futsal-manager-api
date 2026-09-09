@@ -1,6 +1,7 @@
 package com.futsalmanager.infrastructure.repositories;
 
 import com.futsalmanager.domain.entities.GolRegistro;
+import com.futsalmanager.domain.enums.QuadroTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +21,11 @@ public interface GolRegistroRepository extends JpaRepository<GolRegistro, UUID> 
            "FROM GolRegistro g WHERE g.jogo.time.id = :timeId " +
            "GROUP BY g.usuario.id, g.usuario.nome ORDER BY SUM(g.quantidade) DESC")
     List<ArtilheiroProjection> rankingPorTime(@Param("timeId") UUID timeId);
+
+    @Query("SELECT g.usuario.id AS usuarioId, g.usuario.nome AS nome, SUM(g.quantidade) AS gols " +
+           "FROM GolRegistro g WHERE g.jogo.time.id = :timeId AND g.quadro = :quadro " +
+           "GROUP BY g.usuario.id, g.usuario.nome ORDER BY SUM(g.quantidade) DESC")
+    List<ArtilheiroProjection> rankingPorTimeEQuadro(@Param("timeId") UUID timeId, @Param("quadro") QuadroTime quadro);
 
     @Query("SELECT g.usuario.id AS usuarioId, g.usuario.nome AS nome, g.jogo.time.nome AS timeNome, SUM(g.quantidade) AS gols " +
            "FROM GolRegistro g WHERE g.jogo.time.publico = true " +

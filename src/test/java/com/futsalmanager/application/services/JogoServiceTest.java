@@ -215,7 +215,7 @@ class JogoServiceTest {
         Jogo jogo = mock(Jogo.class);
         JogoResponse response = mock(JogoResponse.class);
         Time time = new Time(timeId, "Time Teste", null, true, null, null);
-        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, null);
+        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, null, 0, 0, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogoRepository.save(jogo)).thenReturn(jogo);
@@ -240,7 +240,7 @@ class JogoServiceTest {
         Time time = new Time(timeId, "Time Teste", null, true, null, null);
         UUID usuarioId = UUID.randomUUID();
         Usuario usuario = mock(Usuario.class);
-        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, List.of(usuarioId, usuarioId));
+        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, List.of(usuarioId, usuarioId), 0, 0, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogoRepository.save(jogo)).thenReturn(jogo);
@@ -261,7 +261,7 @@ class JogoServiceTest {
     void finalizar_DeveLancarBusinessException_QuandoJogoNaoAgendado() {
         Jogo jogo = mock(Jogo.class);
         Time time = new Time(timeId, "Time Teste", null, true, null, null);
-        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, null);
+        FinalizarJogoRequest request = new FinalizarJogoRequest(3, 1, null, 0, 0, null);
 
         when(jogoRepository.findById(jogoId)).thenReturn(Optional.of(jogo));
         when(jogo.getTime()).thenReturn(time);
