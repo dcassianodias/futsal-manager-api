@@ -9,6 +9,7 @@ public record FeedJogoResponse(
         UUID timeId,
         String timeNome,
         String adversario,
+        String local,
         StatusJogo status,
         LocalDateTime dataHora,
         Integer golsTime,

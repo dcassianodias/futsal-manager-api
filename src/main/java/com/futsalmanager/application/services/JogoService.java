@@ -284,6 +284,7 @@ public class JogoService {
                         j.getTime().getId(),
                         j.getTime().getNome(),
                         j.getAdversario(),
+                        j.getLocal(),
                         j.getStatusJogo(),
                         j.getDataHora(),
                         j.getGolsTime(),
