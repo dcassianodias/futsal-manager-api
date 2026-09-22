@@ -52,4 +52,6 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
 
     @Query("SELECT COALESCE(SUM(p.valor), 0) FROM Pagamento p WHERE p.time.id = :timeId AND p.statusPagamento = :status")
     BigDecimal sumValorByTimeIdAndStatus(@Param("timeId") UUID timeId, @Param("status") StatusPagamento status);
+
+    long countByTimeIdAndStatusPagamento(UUID timeId, StatusPagamento status);
 }

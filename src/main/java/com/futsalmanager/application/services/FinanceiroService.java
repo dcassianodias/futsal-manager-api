@@ -42,6 +42,7 @@ public class FinanceiroService {
         authenticatedUserProvider.validarAdminDoTime(timeId);
 
         BigDecimal totalRecebido = pagamentoRepository.sumValorByTimeIdAndStatus(timeId, StatusPagamento.PAGO);
+        long quantidadeRecebimentos = pagamentoRepository.countByTimeIdAndStatusPagamento(timeId, StatusPagamento.PAGO);
         BigDecimal totalDespesasPagas = despesaRepository.sumValorPagoByTimeId(timeId);
         BigDecimal saldo = totalRecebido.subtract(totalDespesasPagas);
         BigDecimal totalPendenteReceber = pagamentoRepository.sumValorByTimeIdAndStatus(timeId, StatusPagamento.PENDENTE);
@@ -50,6 +51,7 @@ public class FinanceiroService {
         return new ResumoFinanceiroResponse(
                 timeId,
                 totalRecebido,
+                quantidadeRecebimentos,
                 totalDespesasPagas,
                 saldo,
                 totalPendenteReceber,

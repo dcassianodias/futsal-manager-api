@@ -7,6 +7,7 @@ import java.util.UUID;
 public record ResumoFinanceiroResponse(
         UUID timeId,
         BigDecimal totalRecebido,
+        long quantidadeRecebimentos,
         BigDecimal totalDespesasPagas,
         BigDecimal saldo,
         BigDecimal totalPendenteReceber,
