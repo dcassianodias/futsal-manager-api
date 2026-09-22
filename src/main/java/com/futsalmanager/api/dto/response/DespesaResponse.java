@@ -13,6 +13,8 @@ public record DespesaResponse(
         UUID timeId,
         String descricao,
         BigDecimal valor,
+        BigDecimal valorPago,
+        BigDecimal valorRestante,
         LocalDate mesReferencia,
         TipoDespesa tipoDespesa,
         StatusDespesa status,

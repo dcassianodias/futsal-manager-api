@@ -41,12 +41,13 @@ public class PagamentoService {
     private final PagamentoMapper pagamentoMapper;
     private final PagamentoValidator validator;
     private final AuthenticatedUserProvider authenticatedUserProvider;
+    private final EmailService emailService;
 
     public PagamentoService(PagamentoRepository pagamentoRepository, TimeRepository timeRepository,
                             UsuarioRepository usuarioRepository, UsuarioTimeRepository usuarioTimeRepository,
                             EventoRepository eventoRepository,
                             PagamentoMapper pagamentoMapper, PagamentoValidator validator,
-                            AuthenticatedUserProvider authenticatedUserProvider) {
+                            AuthenticatedUserProvider authenticatedUserProvider, EmailService emailService) {
         this.pagamentoRepository = pagamentoRepository;
         this.timeRepository = timeRepository;
         this.usuarioRepository = usuarioRepository;
@@ -55,6 +56,18 @@ public class PagamentoService {
         this.pagamentoMapper = pagamentoMapper;
         this.validator = validator;
         this.authenticatedUserProvider = authenticatedUserProvider;
+        this.emailService = emailService;
+    }
+
+    private static final java.time.format.DateTimeFormatter MES_REFERENCIA_FMT =
+            java.time.format.DateTimeFormatter.ofPattern("MM/yyyy");
+
+    private String descreverReferencia(Pagamento pagamento) {
+        if (pagamento.getTipoPagamento() == TipoPagamento.MENSALIDADE) {
+            return "Mensalidade referente a " + pagamento.getMesReferencia().format(MES_REFERENCIA_FMT);
+        }
+        Evento evento = pagamento.getEvento();
+        return evento != null ? "Evento: " + evento.getNome() : "Cobrança avulsa";
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +124,9 @@ public class PagamentoService {
 
         log.info("Pagamento criado: id={}, valor={}, tipo={}", saved.getId(), saved.getValor(),
                 saved.getTipoPagamento());
+
+        emailService.enviarEmailNovaCobranca(usuario.getEmail(), usuario.getNome(), time.getNome(),
+                saved.getValor(), descreverReferencia(saved));
 
         return pagamentoMapper.toResponse(saved);
     }
@@ -208,6 +224,9 @@ public class PagamentoService {
 
             pagamentoRepository.save(pagamento);
             totalGerados++;
+
+            emailService.enviarEmailNovaCobranca(atleta.getEmail(), atleta.getNome(), time.getNome(),
+                    pagamento.getValor(), descreverReferencia(pagamento));
         }
 
         log.info("Mensalidades geradas para o time {} no mês {}. Gerados: {}, já existentes: {}",

@@ -1,7 +1,9 @@
 package com.futsalmanager.api.controller;
 
+import com.futsalmanager.api.dto.request.DespesaAbatimentoCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaUpdateRequest;
+import com.futsalmanager.api.dto.response.DespesaAbatimentoResponse;
 import com.futsalmanager.api.dto.response.DespesaResponse;
 import com.futsalmanager.application.services.DespesaService;
 import com.futsalmanager.openapi.annotations.ApiResponseCommon;
@@ -128,6 +130,35 @@ public class DespesaController {
     )
     public ResponseEntity<DespesaResponse> marcarComoPago(@PathVariable UUID id){
         return ResponseEntity.ok(service.marcarComoPago(id));
+    }
+
+    @PostMapping("/{id}/abatimentos")
+    @Operation(
+            summary = "Registrar abatimento (pagamento parcial) de uma despesa",
+            description = "Registra um valor pago referente a uma despesa, atualizando o quanto já foi pago e o status (PARCIAL ou PAGO). Retorna a despesa atualizada."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Abatimento registrado",
+            content = @Content(schema = @Schema(implementation = DespesaResponse.class))
+    )
+    public ResponseEntity<DespesaResponse> registrarAbatimento(@PathVariable UUID id,
+                                                               @RequestBody @Valid DespesaAbatimentoCreateRequest request){
+        return ResponseEntity.ok(service.registrarAbatimento(id, request));
+    }
+
+    @GetMapping("/{id}/abatimentos")
+    @Operation(
+            summary = "Listar abatimentos de uma despesa",
+            description = "Retorna o histórico de pagamentos parciais registrados para uma despesa."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Lista de abatimentos",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = DespesaAbatimentoResponse.class)))
+    )
+    public ResponseEntity<List<DespesaAbatimentoResponse>> findAbatimentos(@PathVariable UUID id){
+        return ResponseEntity.ok(service.findAbatimentos(id));
     }
 
     @DeleteMapping("/{id}")

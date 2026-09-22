@@ -4,8 +4,11 @@ import com.futsalmanager.domain.entities.Pagamento;
 import com.futsalmanager.domain.enums.StatusPagamento;
 import com.futsalmanager.domain.enums.TipoPagamento;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -42,4 +45,11 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
             TipoPagamento tipoPagamento,
             StatusPagamento statusPagamento
     );
+
+    List<Pagamento> findTop10ByTimeIdAndStatusPagamentoOrderByDataAtualizacaoDesc(
+            UUID timeId, StatusPagamento statusPagamento
+    );
+
+    @Query("SELECT COALESCE(SUM(p.valor), 0) FROM Pagamento p WHERE p.time.id = :timeId AND p.statusPagamento = :status")
+    BigDecimal sumValorByTimeIdAndStatus(@Param("timeId") UUID timeId, @Param("status") StatusPagamento status);
 }

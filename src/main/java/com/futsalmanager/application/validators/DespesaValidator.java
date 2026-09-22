@@ -1,5 +1,6 @@
 package com.futsalmanager.application.validators;
 
+import com.futsalmanager.api.dto.request.DespesaAbatimentoCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaUpdateRequest;
 import com.futsalmanager.application.validators.common.CommonValidator;
@@ -29,6 +30,10 @@ public class DespesaValidator {
         if (request.descricao() != null) {
             commonValidator.validarTextoObrigatorio(request.descricao(), "Descrição da despesa");
         }
+    }
+
+    public void validarAbatimento(DespesaAbatimentoCreateRequest request) {
+        commonValidator.validarValorPositivo(request.valor(), "Valor do abatimento");
     }
 
 }

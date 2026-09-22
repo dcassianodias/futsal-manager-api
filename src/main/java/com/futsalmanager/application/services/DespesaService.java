@@ -1,14 +1,20 @@
 package com.futsalmanager.application.services;
 
+import com.futsalmanager.api.dto.request.DespesaAbatimentoCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaCreateRequest;
 import com.futsalmanager.api.dto.request.DespesaUpdateRequest;
+import com.futsalmanager.api.dto.response.DespesaAbatimentoResponse;
 import com.futsalmanager.api.dto.response.DespesaResponse;
+import com.futsalmanager.application.exceptions.BusinessException;
 import com.futsalmanager.application.exceptions.ResourceNotFoundException;
+import com.futsalmanager.application.mappers.DespesaAbatimentoMapper;
 import com.futsalmanager.application.mappers.DespesaMapper;
 import com.futsalmanager.application.validators.DespesaValidator;
 import com.futsalmanager.domain.entities.Despesa;
+import com.futsalmanager.domain.entities.DespesaAbatimento;
 import com.futsalmanager.domain.entities.Time;
 import com.futsalmanager.domain.entities.Usuario;
+import com.futsalmanager.infrastructure.repositories.DespesaAbatimentoRepository;
 import com.futsalmanager.infrastructure.repositories.DespesaRepository;
 import com.futsalmanager.infrastructure.repositories.TimeRepository;
 import com.futsalmanager.security.service.AuthenticatedUserProvider;
@@ -25,17 +31,22 @@ import java.util.UUID;
 public class DespesaService {
 
     private final DespesaRepository despesaRepository;
+    private final DespesaAbatimentoRepository despesaAbatimentoRepository;
     private final TimeRepository timeRepository;
     private final DespesaMapper despesaMapper;
+    private final DespesaAbatimentoMapper despesaAbatimentoMapper;
     private final DespesaValidator validator;
     private final AuthenticatedUserProvider authenticatedUserProvider;
 
-    public DespesaService(DespesaRepository despesaRepository, TimeRepository timeRepository,
-                          DespesaMapper despesaMapper, DespesaValidator validator,
+    public DespesaService(DespesaRepository despesaRepository, DespesaAbatimentoRepository despesaAbatimentoRepository,
+                          TimeRepository timeRepository, DespesaMapper despesaMapper,
+                          DespesaAbatimentoMapper despesaAbatimentoMapper, DespesaValidator validator,
                           AuthenticatedUserProvider authenticatedUserProvider) {
         this.despesaRepository = despesaRepository;
+        this.despesaAbatimentoRepository = despesaAbatimentoRepository;
         this.timeRepository = timeRepository;
         this.despesaMapper = despesaMapper;
+        this.despesaAbatimentoMapper = despesaAbatimentoMapper;
         this.validator = validator;
         this.authenticatedUserProvider = authenticatedUserProvider;
     }
@@ -85,9 +96,52 @@ public class DespesaService {
 
         validator.validarUpdate(request);
 
+        if (request.valor() != null && request.valor().compareTo(entity.getValorPago()) < 0) {
+            throw new BusinessException(
+                    "Valor não pode ser menor que o total já pago (" + entity.getValorPago() + ")");
+        }
+
         despesaMapper.updateEntityFromRequest(request, entity);
+        entity.recalcularStatus();
 
         return despesaMapper.toResponse(despesaRepository.save(entity));
+    }
+
+    @Transactional
+    public DespesaResponse registrarAbatimento(UUID id, DespesaAbatimentoCreateRequest request) {
+        Despesa entity = despesaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + id));
+        authenticatedUserProvider.validarAdminDoTime(entity.getTime().getId());
+
+        validator.validarAbatimento(request);
+
+        entity.registrarAbatimento(request.valor());
+
+        DespesaAbatimento abatimento = new DespesaAbatimento(
+                entity,
+                request.valor(),
+                request.dataPagamento() != null ? request.dataPagamento() : java.time.LocalDate.now(),
+                request.observacao(),
+                authenticatedUserProvider.getUsuarioAutenticado()
+        );
+        despesaAbatimentoRepository.save(abatimento);
+
+        Despesa saved = despesaRepository.save(entity);
+
+        log.info("Abatimento registrado: despesaId={}, valor={}, valorPagoTotal={}",
+                saved.getId(), request.valor(), saved.getValorPago());
+
+        return despesaMapper.toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DespesaAbatimentoResponse> findAbatimentos(UUID despesaId) {
+        Despesa entity = despesaRepository.findById(despesaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada: " + despesaId));
+        authenticatedUserProvider.validarMembro(entity.getTime().getId());
+
+        return despesaAbatimentoMapper.toResponseList(
+                despesaAbatimentoRepository.findByDespesaIdOrderByDataPagamentoDesc(despesaId));
     }
 
     @Transactional

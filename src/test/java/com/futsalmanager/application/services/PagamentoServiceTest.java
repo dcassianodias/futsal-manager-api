@@ -66,6 +66,9 @@ class PagamentoServiceTest {
     @Mock
     private AuthenticatedUserProvider authenticatedUserProvider;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private PagamentoService pagamentoService;
 

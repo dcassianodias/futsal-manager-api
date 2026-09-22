@@ -35,6 +35,9 @@ public class Despesa {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal valor;
 
+    @Column(name = "valor_pago", nullable = false, precision = 10, scale = 2)
+    private BigDecimal valorPago = BigDecimal.ZERO;
+
     @Column(name = "mes_referencia", nullable = false)
     private LocalDate mesReferencia;
 
@@ -71,10 +74,45 @@ public class Despesa {
     }
 
     public void pagar() {
-        if (this.status != StatusDespesa.PENDENTE) {
-            throw new BusinessException("Despesa só pode ser marcada como paga se estiver pendente");
+        if (this.status == StatusDespesa.PAGO) {
+            throw new BusinessException("Despesa já está paga");
         }
+        this.valorPago = this.valor;
         this.status = StatusDespesa.PAGO;
+    }
+
+    /**
+     * Registra um abatimento (pagamento parcial) na despesa, atualizando o valor pago
+     * e recalculando o status (PARCIAL enquanto não cobrir o valor total, PAGO quando cobrir).
+     */
+    public void registrarAbatimento(BigDecimal valorAbatimento) {
+        if (this.status == StatusDespesa.PAGO) {
+            throw new BusinessException("Despesa já está totalmente paga");
+        }
+
+        BigDecimal novoTotal = this.valorPago.add(valorAbatimento);
+        if (novoTotal.compareTo(this.valor) > 0) {
+            throw new BusinessException(
+                    "Valor do abatimento excede o saldo restante da despesa (restante: " + getValorRestante() + ")");
+        }
+
+        this.valorPago = novoTotal;
+        this.status = novoTotal.compareTo(this.valor) == 0 ? StatusDespesa.PAGO : StatusDespesa.PARCIAL;
+    }
+
+    public BigDecimal getValorRestante() {
+        return this.valor.subtract(this.valorPago);
+    }
+
+    /** Reconcilia o status conforme o valor pago acumulado — usado quando o valor total da despesa é editado. */
+    public void recalcularStatus() {
+        if (this.valorPago.compareTo(this.valor) >= 0) {
+            this.status = StatusDespesa.PAGO;
+        } else if (this.valorPago.signum() > 0) {
+            this.status = StatusDespesa.PARCIAL;
+        } else {
+            this.status = StatusDespesa.PENDENTE;
+        }
     }
 
     public UUID getId() {
@@ -107,6 +145,14 @@ public class Despesa {
 
     public void setValor(BigDecimal valor) {
         this.valor = valor;
+    }
+
+    public BigDecimal getValorPago() {
+        return valorPago;
+    }
+
+    public void setValorPago(BigDecimal valorPago) {
+        this.valorPago = valorPago;
     }
 
     public LocalDate getMesReferencia() {
